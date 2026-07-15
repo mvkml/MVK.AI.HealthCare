@@ -12,4 +12,5 @@ public interface IImmunizationBL
     Task<ImmunizationsModel> Update(ImmunizationsModel immunizationsModel);
     Task<ImmunizationsModel> Delete(ImmunizationsModel immunizationsModel);
     Task<ImportResult> Import(Stream csvStream);
+    Task<ImportResult> ImportUpsert(Stream csvStream);
 }

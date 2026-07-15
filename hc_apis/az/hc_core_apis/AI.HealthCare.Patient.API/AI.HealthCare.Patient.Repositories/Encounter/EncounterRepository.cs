@@ -49,6 +49,28 @@ public class EncounterRepository : IEncounterRepository
         _context.ChangeTracker.Clear();
     }
 
+    public async Task UpsertBatch(List<EncounterItem> encounterItems)
+    {
+        var ids = encounterItems.Select(e => e.Id).ToHashSet();
+        var existingIds = (await _context.Encounters
+            .Where(e => ids.Contains(e.Id))
+            .Select(e => e.Id)
+            .ToListAsync())
+            .ToHashSet();
+
+        foreach (var item in encounterItems)
+        {
+            var entity = _mapper.ToEntity(item);
+            if (existingIds.Contains(item.Id))
+                _context.Encounters.Update(entity);
+            else
+                _context.Encounters.Add(entity);
+        }
+
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<EncounterItem?> Update(EncounterItem encounterItem)
     {
         var entity = await _context.Encounters.FirstOrDefaultAsync(e => e.Id == encounterItem.Id);

@@ -43,6 +43,28 @@ public class PatientRepository : IPatientRepository
         _context.ChangeTracker.Clear();
     }
 
+    public async Task UpsertBatch(List<PatientItem> patientItems)
+    {
+        var ids = patientItems.Select(p => p.Id).ToHashSet();
+        var existingIds = (await _context.Patients
+            .Where(p => ids.Contains(p.Id))
+            .Select(p => p.Id)
+            .ToListAsync())
+            .ToHashSet();
+
+        foreach (var item in patientItems)
+        {
+            var entity = _mapper.ToEntity(item);
+            if (existingIds.Contains(item.Id))
+                _context.Patients.Update(entity);
+            else
+                _context.Patients.Add(entity);
+        }
+
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<PatientItem?> Update(PatientItem patientItem)
     {
         var entity = await _context.Patients.FirstOrDefaultAsync(p => p.Id == patientItem.Id);

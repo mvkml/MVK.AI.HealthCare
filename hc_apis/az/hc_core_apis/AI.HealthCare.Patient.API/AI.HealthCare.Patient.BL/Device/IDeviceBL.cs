@@ -12,4 +12,5 @@ public interface IDeviceBL
     Task<DevicesModel> Update(DevicesModel devicesModel);
     Task<DevicesModel> Delete(DevicesModel devicesModel);
     Task<ImportResult> Import(Stream csvStream);
+    Task<ImportResult> ImportUpsert(Stream csvStream);
 }

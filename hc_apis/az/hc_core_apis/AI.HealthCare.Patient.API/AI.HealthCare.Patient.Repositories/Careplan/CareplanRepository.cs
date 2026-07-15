@@ -49,6 +49,28 @@ public class CareplanRepository : ICareplanRepository
         _context.ChangeTracker.Clear();
     }
 
+    public async Task UpsertBatch(List<CareplanItem> careplanItems)
+    {
+        var ids = careplanItems.Select(c => c.Id).ToHashSet();
+        var existingIds = (await _context.Careplans
+            .Where(c => ids.Contains(c.Id))
+            .Select(c => c.Id)
+            .ToListAsync())
+            .ToHashSet();
+
+        foreach (var item in careplanItems)
+        {
+            var entity = _mapper.ToEntity(item);
+            if (existingIds.Contains(item.Id))
+                _context.Careplans.Update(entity);
+            else
+                _context.Careplans.Add(entity);
+        }
+
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<CareplanItem?> Update(CareplanItem careplanItem)
     {
         var entity = await _context.Careplans.FirstOrDefaultAsync(c => c.Id == careplanItem.Id);

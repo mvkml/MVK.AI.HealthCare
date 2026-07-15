@@ -101,6 +101,19 @@ public class OrganizationsController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Bulk upserts organizations from a CSV file (Synthea organizations.csv format). Rows whose Id already exists are updated in place; new Ids are inserted.</summary>
+    [HttpPost("import/upsert")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> ImportUpsert(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _organizationBL.ImportUpsert(file.OpenReadStream());
+        return Ok(result);
+    }
+
     /// <summary>Deletes an organization by Id.</summary>
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)

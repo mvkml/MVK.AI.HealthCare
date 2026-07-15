@@ -43,6 +43,28 @@ public class ProviderRepository : IProviderRepository
         _context.ChangeTracker.Clear();
     }
 
+    public async Task UpsertBatch(List<ProviderItem> providerItems)
+    {
+        var ids = providerItems.Select(p => p.Id).ToHashSet();
+        var existingIds = (await _context.Providers
+            .Where(p => ids.Contains(p.Id))
+            .Select(p => p.Id)
+            .ToListAsync())
+            .ToHashSet();
+
+        foreach (var item in providerItems)
+        {
+            var entity = _mapper.ToEntity(item);
+            if (existingIds.Contains(item.Id))
+                _context.Providers.Update(entity);
+            else
+                _context.Providers.Add(entity);
+        }
+
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<ProviderItem?> Update(ProviderItem providerItem)
     {
         var entity = await _context.Providers.FirstOrDefaultAsync(p => p.Id == providerItem.Id);

@@ -49,6 +49,43 @@ public class AllergyRepository : IAllergyRepository
         _context.ChangeTracker.Clear();
     }
 
+    public async Task UpsertBatch(List<AllergyItem> allergyItems)
+    {
+        var patientIds = allergyItems.Select(a => a.PatientId).ToHashSet();
+
+        var existingEntities = await _context.Allergies
+            .Where(a => patientIds.Contains(a.PatientId))
+            .ToListAsync();
+        var existingByKey = existingEntities.ToLookup(e => (e.PatientId, e.EncounterId, e.Code));
+
+        foreach (var item in allergyItems)
+        {
+            var match = existingByKey[(item.PatientId, item.EncounterId, item.Code)].FirstOrDefault();
+            if (match is not null)
+            {
+                match.Start = item.Start;
+                match.Stop = item.Stop;
+                match.System = item.System;
+                match.Description = item.Description;
+                match.Type = item.Type;
+                match.Category = item.Category;
+                match.Reaction1 = item.Reaction1;
+                match.Description1 = item.Description1;
+                match.Severity1 = item.Severity1;
+                match.Reaction2 = item.Reaction2;
+                match.Description2 = item.Description2;
+                match.Severity2 = item.Severity2;
+            }
+            else
+            {
+                _context.Allergies.Add(_mapper.ToEntity(item));
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<AllergyItem?> Update(AllergyItem allergyItem)
     {
         var entity = await _context.Allergies.FirstOrDefaultAsync(a => a.Id == allergyItem.Id);

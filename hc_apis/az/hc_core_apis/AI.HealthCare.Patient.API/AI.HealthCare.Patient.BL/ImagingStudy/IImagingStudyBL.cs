@@ -12,4 +12,5 @@ public interface IImagingStudyBL
     Task<ImagingStudiesModel> Update(ImagingStudiesModel imagingStudiesModel);
     Task<ImagingStudiesModel> Delete(ImagingStudiesModel imagingStudiesModel);
     Task<ImportResult> Import(Stream csvStream);
+    Task<ImportResult> ImportUpsert(Stream csvStream);
 }

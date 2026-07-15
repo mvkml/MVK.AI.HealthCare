@@ -109,6 +109,19 @@ public class CareplansController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Bulk upserts careplans from a CSV file (Synthea careplans.csv format). Rows whose Id already exists are updated in place; new Ids are inserted. Matching Patient and Encounter records must already exist.</summary>
+    [HttpPost("import/upsert")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> ImportUpsert(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _careplanBL.ImportUpsert(file.OpenReadStream());
+        return Ok(result);
+    }
+
     /// <summary>Deletes a careplan by Id.</summary>
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)

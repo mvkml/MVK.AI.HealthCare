@@ -12,4 +12,5 @@ public interface IProcedureBL
     Task<ProceduresModel> Update(ProceduresModel proceduresModel);
     Task<ProceduresModel> Delete(ProceduresModel proceduresModel);
     Task<ImportResult> Import(Stream csvStream);
+    Task<ImportResult> ImportUpsert(Stream csvStream);
 }

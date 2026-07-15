@@ -109,6 +109,19 @@ public class EncountersController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Bulk upserts encounters from a CSV file (Synthea encounters.csv format). Rows whose Id already exists are updated in place; new Ids are inserted. Matching Patient, Organization, Provider, and Payer records must already exist.</summary>
+    [HttpPost("import/upsert")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> ImportUpsert(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _encounterBL.ImportUpsert(file.OpenReadStream());
+        return Ok(result);
+    }
+
     /// <summary>Deletes an encounter by Id.</summary>
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)

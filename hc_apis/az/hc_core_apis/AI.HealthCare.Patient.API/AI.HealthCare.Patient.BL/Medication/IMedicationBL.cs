@@ -12,4 +12,5 @@ public interface IMedicationBL
     Task<MedicationsModel> Update(MedicationsModel medicationsModel);
     Task<MedicationsModel> Delete(MedicationsModel medicationsModel);
     Task<ImportResult> Import(Stream csvStream);
+    Task<ImportResult> ImportUpsert(Stream csvStream);
 }

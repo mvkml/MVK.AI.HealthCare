@@ -11,4 +11,5 @@ public interface IPayerBL
     Task<PayersModel> Update(PayersModel payersModel);
     Task<PayersModel> Delete(PayersModel payersModel);
     Task<ImportResult> Import(Stream csvStream);
+    Task<ImportResult> ImportUpsert(Stream csvStream);
 }

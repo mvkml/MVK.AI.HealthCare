@@ -49,6 +49,34 @@ public class SupplyRepository : ISupplyRepository
         _context.ChangeTracker.Clear();
     }
 
+    public async Task UpsertBatch(List<SupplyItem> supplyItems)
+    {
+        var patientIds = supplyItems.Select(s => s.PatientId).ToHashSet();
+
+        var existingEntities = await _context.Supplies
+            .Where(s => patientIds.Contains(s.PatientId))
+            .ToListAsync();
+        var existingByKey = existingEntities.ToLookup(e => (e.PatientId, e.EncounterId, e.Code));
+
+        foreach (var item in supplyItems)
+        {
+            var match = existingByKey[(item.PatientId, item.EncounterId, item.Code)].FirstOrDefault();
+            if (match is not null)
+            {
+                match.Date = item.Date;
+                match.Description = item.Description;
+                match.Quantity = item.Quantity;
+            }
+            else
+            {
+                _context.Supplies.Add(_mapper.ToEntity(item));
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<SupplyItem?> Update(SupplyItem supplyItem)
     {
         var entity = await _context.Supplies.FirstOrDefaultAsync(s => s.Id == supplyItem.Id);

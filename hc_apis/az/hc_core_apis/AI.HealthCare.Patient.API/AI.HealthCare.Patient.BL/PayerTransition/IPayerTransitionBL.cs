@@ -11,4 +11,5 @@ public interface IPayerTransitionBL
     Task<PayerTransitionsModel> Update(PayerTransitionsModel payerTransitionsModel);
     Task<PayerTransitionsModel> Delete(PayerTransitionsModel payerTransitionsModel);
     Task<ImportResult> Import(Stream csvStream);
+    Task<ImportResult> ImportUpsert(Stream csvStream);
 }

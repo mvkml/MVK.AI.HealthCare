@@ -12,4 +12,5 @@ public interface ICareplanBL
     Task<CareplansModel> Update(CareplansModel careplansModel);
     Task<CareplansModel> Delete(CareplansModel careplansModel);
     Task<ImportResult> Import(Stream csvStream);
+    Task<ImportResult> ImportUpsert(Stream csvStream);
 }

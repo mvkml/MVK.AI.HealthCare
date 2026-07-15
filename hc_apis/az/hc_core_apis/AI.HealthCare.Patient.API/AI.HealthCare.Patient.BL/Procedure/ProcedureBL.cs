@@ -104,7 +104,13 @@ public class ProcedureBL : IProcedureBL
         return proceduresModel;
     }
 
-    public async Task<ImportResult> Import(Stream csvStream)
+    public async Task<ImportResult> Import(Stream csvStream) =>
+        await RunImport(csvStream, FlushBatch);
+
+    public async Task<ImportResult> ImportUpsert(Stream csvStream) =>
+        await RunImport(csvStream, FlushUpsertBatch);
+
+    private async Task<ImportResult> RunImport(Stream csvStream, Func<List<ProcedureItem>, ImportResult, Task> flush)
     {
         var result = new ImportResult();
         var batch = new List<ProcedureItem>();
@@ -134,11 +140,11 @@ public class ProcedureBL : IProcedureBL
             }
 
             if (batch.Count >= ImportBatchSize)
-                await FlushBatch(batch, result);
+                await flush(batch, result);
         }
 
         if (batch.Count > 0)
-            await FlushBatch(batch, result);
+            await flush(batch, result);
 
         return result;
     }
@@ -154,6 +160,24 @@ public class ProcedureBL : IProcedureBL
         {
             result.FailedCount += batch.Count;
             result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
+
+    private async Task FlushUpsertBatch(List<ProcedureItem> batch, ImportResult result)
+    {
+        try
+        {
+            await _procedureRepository.UpsertBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch upsert failed: {ex.Message}" });
         }
         finally
         {

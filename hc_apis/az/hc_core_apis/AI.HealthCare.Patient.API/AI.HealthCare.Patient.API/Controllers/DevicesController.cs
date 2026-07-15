@@ -109,6 +109,19 @@ public class DevicesController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Bulk upserts devices from a CSV file (Synthea devices.csv format). Rows matching an existing Patient+Encounter+Udi combination are updated in place; others are inserted. Matching Patient and Encounter records must already exist.</summary>
+    [HttpPost("import/upsert")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> ImportUpsert(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _deviceBL.ImportUpsert(file.OpenReadStream());
+        return Ok(result);
+    }
+
     /// <summary>Deletes a device by Id.</summary>
     [HttpDelete("{id:long}")]
     public async Task<IActionResult> Delete(long id)

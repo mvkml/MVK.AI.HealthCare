@@ -49,6 +49,35 @@ public class DeviceRepository : IDeviceRepository
         _context.ChangeTracker.Clear();
     }
 
+    public async Task UpsertBatch(List<DeviceItem> deviceItems)
+    {
+        var patientIds = deviceItems.Select(d => d.PatientId).ToHashSet();
+
+        var existingEntities = await _context.Devices
+            .Where(d => patientIds.Contains(d.PatientId))
+            .ToListAsync();
+        var existingByKey = existingEntities.ToLookup(e => (e.PatientId, e.EncounterId, e.Udi));
+
+        foreach (var item in deviceItems)
+        {
+            var match = existingByKey[(item.PatientId, item.EncounterId, item.Udi)].FirstOrDefault();
+            if (match is not null)
+            {
+                match.Start = item.Start;
+                match.Stop = item.Stop;
+                match.Code = item.Code;
+                match.Description = item.Description;
+            }
+            else
+            {
+                _context.Devices.Add(_mapper.ToEntity(item));
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<DeviceItem?> Update(DeviceItem deviceItem)
     {
         var entity = await _context.Devices.FirstOrDefaultAsync(d => d.Id == deviceItem.Id);

@@ -12,4 +12,5 @@ public interface IConditionBL
     Task<ConditionsModel> Update(ConditionsModel conditionsModel);
     Task<ConditionsModel> Delete(ConditionsModel conditionsModel);
     Task<ImportResult> Import(Stream csvStream);
+    Task<ImportResult> ImportUpsert(Stream csvStream);
 }

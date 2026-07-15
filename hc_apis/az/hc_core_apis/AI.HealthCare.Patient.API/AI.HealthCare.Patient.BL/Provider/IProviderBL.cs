@@ -11,4 +11,5 @@ public interface IProviderBL
     Task<ProvidersModel> Update(ProvidersModel providersModel);
     Task<ProvidersModel> Delete(ProvidersModel providersModel);
     Task<ImportResult> Import(Stream csvStream);
+    Task<ImportResult> ImportUpsert(Stream csvStream);
 }

@@ -49,6 +49,28 @@ public class ImagingStudyRepository : IImagingStudyRepository
         _context.ChangeTracker.Clear();
     }
 
+    public async Task UpsertBatch(List<ImagingStudyItem> imagingStudyItems)
+    {
+        var ids = imagingStudyItems.Select(i => i.Id).ToHashSet();
+        var existingIds = (await _context.ImagingStudies
+            .Where(i => ids.Contains(i.Id))
+            .Select(i => i.Id)
+            .ToListAsync())
+            .ToHashSet();
+
+        foreach (var item in imagingStudyItems)
+        {
+            var entity = _mapper.ToEntity(item);
+            if (existingIds.Contains(item.Id))
+                _context.ImagingStudies.Update(entity);
+            else
+                _context.ImagingStudies.Add(entity);
+        }
+
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<ImagingStudyItem?> Update(ImagingStudyItem imagingStudyItem)
     {
         var entity = await _context.ImagingStudies.FirstOrDefaultAsync(i => i.Id == imagingStudyItem.Id);

@@ -12,4 +12,5 @@ public interface IEncounterBL
     Task<EncountersModel> Update(EncountersModel encountersModel);
     Task<EncountersModel> Delete(EncountersModel encountersModel);
     Task<ImportResult> Import(Stream csvStream);
+    Task<ImportResult> ImportUpsert(Stream csvStream);
 }

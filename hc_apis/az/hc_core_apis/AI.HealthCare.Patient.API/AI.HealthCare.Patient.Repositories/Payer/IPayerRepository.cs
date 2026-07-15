@@ -8,6 +8,7 @@ public interface IPayerRepository
     Task<List<PayerItem>> GetAll();
     Task<PayerItem> Create(PayerItem payerItem);
     Task CreateBatch(List<PayerItem> payerItems);
+    Task UpsertBatch(List<PayerItem> payerItems);
     Task<PayerItem?> Update(PayerItem payerItem);
     Task<bool> Delete(Guid id);
 }

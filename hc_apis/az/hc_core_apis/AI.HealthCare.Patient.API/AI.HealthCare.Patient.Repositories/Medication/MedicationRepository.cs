@@ -49,6 +49,41 @@ public class MedicationRepository : IMedicationRepository
         _context.ChangeTracker.Clear();
     }
 
+    public async Task UpsertBatch(List<MedicationItem> medicationItems)
+    {
+        var patientIds = medicationItems.Select(m => m.PatientId).ToHashSet();
+
+        var existingEntities = await _context.Medications
+            .Where(m => patientIds.Contains(m.PatientId))
+            .ToListAsync();
+        var existingByKey = existingEntities.ToLookup(e => (e.PatientId, e.EncounterId, e.Code));
+
+        foreach (var item in medicationItems)
+        {
+            var match = existingByKey[(item.PatientId, item.EncounterId, item.Code)].FirstOrDefault();
+            if (match is not null)
+            {
+                match.Start = item.Start;
+                match.Stop = item.Stop;
+                match.PayerId = item.PayerId;
+                match.Description = item.Description;
+                match.BaseCost = item.BaseCost;
+                match.PayerCoverage = item.PayerCoverage;
+                match.TotalCost = item.TotalCost;
+                match.Dispenses = item.Dispenses;
+                match.ReasonCode = item.ReasonCode;
+                match.ReasonDescription = item.ReasonDescription;
+            }
+            else
+            {
+                _context.Medications.Add(_mapper.ToEntity(item));
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<MedicationItem?> Update(MedicationItem medicationItem)
     {
         var entity = await _context.Medications.FirstOrDefaultAsync(m => m.Id == medicationItem.Id);

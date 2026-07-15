@@ -101,6 +101,19 @@ public class PayerTransitionsController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Bulk upserts payer transitions from a CSV file (Synthea payer_transitions.csv format). Rows matching an existing Patient+MemberId combination are updated in place; others are inserted. Matching Patient and Payer records must already exist.</summary>
+    [HttpPost("import/upsert")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> ImportUpsert(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _payerTransitionBL.ImportUpsert(file.OpenReadStream());
+        return Ok(result);
+    }
+
     /// <summary>Deletes a payer transition by Id.</summary>
     [HttpDelete("{id:long}")]
     public async Task<IActionResult> Delete(long id)

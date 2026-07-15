@@ -49,6 +49,34 @@ public class ImmunizationRepository : IImmunizationRepository
         _context.ChangeTracker.Clear();
     }
 
+    public async Task UpsertBatch(List<ImmunizationItem> immunizationItems)
+    {
+        var patientIds = immunizationItems.Select(i => i.PatientId).ToHashSet();
+
+        var existingEntities = await _context.Immunizations
+            .Where(i => patientIds.Contains(i.PatientId))
+            .ToListAsync();
+        var existingByKey = existingEntities.ToLookup(e => (e.PatientId, e.EncounterId, e.Code));
+
+        foreach (var item in immunizationItems)
+        {
+            var match = existingByKey[(item.PatientId, item.EncounterId, item.Code)].FirstOrDefault();
+            if (match is not null)
+            {
+                match.Date = item.Date;
+                match.Description = item.Description;
+                match.BaseCost = item.BaseCost;
+            }
+            else
+            {
+                _context.Immunizations.Add(_mapper.ToEntity(item));
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<ImmunizationItem?> Update(ImmunizationItem immunizationItem)
     {
         var entity = await _context.Immunizations.FirstOrDefaultAsync(i => i.Id == immunizationItem.Id);

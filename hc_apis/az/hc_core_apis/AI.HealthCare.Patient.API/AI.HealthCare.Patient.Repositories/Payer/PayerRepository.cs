@@ -43,6 +43,28 @@ public class PayerRepository : IPayerRepository
         _context.ChangeTracker.Clear();
     }
 
+    public async Task UpsertBatch(List<PayerItem> payerItems)
+    {
+        var ids = payerItems.Select(p => p.Id).ToHashSet();
+        var existingIds = (await _context.Payers
+            .Where(p => ids.Contains(p.Id))
+            .Select(p => p.Id)
+            .ToListAsync())
+            .ToHashSet();
+
+        foreach (var item in payerItems)
+        {
+            var entity = _mapper.ToEntity(item);
+            if (existingIds.Contains(item.Id))
+                _context.Payers.Update(entity);
+            else
+                _context.Payers.Add(entity);
+        }
+
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<PayerItem?> Update(PayerItem payerItem)
     {
         var entity = await _context.Payers.FirstOrDefaultAsync(p => p.Id == payerItem.Id);

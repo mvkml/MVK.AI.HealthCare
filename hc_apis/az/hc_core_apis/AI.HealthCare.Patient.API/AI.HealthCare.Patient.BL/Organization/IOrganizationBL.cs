@@ -11,4 +11,5 @@ public interface IOrganizationBL
     Task<OrganizationsModel> Update(OrganizationsModel organizationsModel);
     Task<OrganizationsModel> Delete(OrganizationsModel organizationsModel);
     Task<ImportResult> Import(Stream csvStream);
+    Task<ImportResult> ImportUpsert(Stream csvStream);
 }

@@ -9,6 +9,7 @@ public interface IEncounterRepository
     Task<List<EncounterItem>> GetByPatientId(Guid patientId);
     Task<EncounterItem> Create(EncounterItem encounterItem);
     Task CreateBatch(List<EncounterItem> encounterItems);
+    Task UpsertBatch(List<EncounterItem> encounterItems);
     Task<EncounterItem?> Update(EncounterItem encounterItem);
     Task<bool> Delete(Guid id);
 }

@@ -12,4 +12,5 @@ public interface ISupplyBL
     Task<SuppliesModel> Update(SuppliesModel suppliesModel);
     Task<SuppliesModel> Delete(SuppliesModel suppliesModel);
     Task<ImportResult> Import(Stream csvStream);
+    Task<ImportResult> ImportUpsert(Stream csvStream);
 }

@@ -49,6 +49,28 @@ public class ClaimRepository : IClaimRepository
         _context.ChangeTracker.Clear();
     }
 
+    public async Task UpsertBatch(List<ClaimItem> claimItems)
+    {
+        var ids = claimItems.Select(c => c.Id).ToHashSet();
+        var existingIds = (await _context.Claims
+            .Where(c => ids.Contains(c.Id))
+            .Select(c => c.Id)
+            .ToListAsync())
+            .ToHashSet();
+
+        foreach (var item in claimItems)
+        {
+            var entity = _mapper.ToEntity(item);
+            if (existingIds.Contains(item.Id))
+                _context.Claims.Update(entity);
+            else
+                _context.Claims.Add(entity);
+        }
+
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<ClaimItem?> Update(ClaimItem claimItem)
     {
         var entity = await _context.Claims.FirstOrDefaultAsync(c => c.Id == claimItem.Id);

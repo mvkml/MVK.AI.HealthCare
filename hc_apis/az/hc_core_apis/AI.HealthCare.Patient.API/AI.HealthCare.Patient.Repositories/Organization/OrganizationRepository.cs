@@ -43,6 +43,28 @@ public class OrganizationRepository : IOrganizationRepository
         _context.ChangeTracker.Clear();
     }
 
+    public async Task UpsertBatch(List<OrganizationItem> organizationItems)
+    {
+        var ids = organizationItems.Select(o => o.Id).ToHashSet();
+        var existingIds = (await _context.Organizations
+            .Where(o => ids.Contains(o.Id))
+            .Select(o => o.Id)
+            .ToListAsync())
+            .ToHashSet();
+
+        foreach (var item in organizationItems)
+        {
+            var entity = _mapper.ToEntity(item);
+            if (existingIds.Contains(item.Id))
+                _context.Organizations.Update(entity);
+            else
+                _context.Organizations.Add(entity);
+        }
+
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<OrganizationItem?> Update(OrganizationItem organizationItem)
     {
         var entity = await _context.Organizations.FirstOrDefaultAsync(o => o.Id == organizationItem.Id);

@@ -9,6 +9,7 @@ public interface IClaimRepository
     Task<List<ClaimItem>> GetByPatientId(Guid patientId);
     Task<ClaimItem> Create(ClaimItem claimItem);
     Task CreateBatch(List<ClaimItem> claimItems);
+    Task UpsertBatch(List<ClaimItem> claimItems);
     Task<ClaimItem?> Update(ClaimItem claimItem);
     Task<bool> Delete(Guid id);
 }

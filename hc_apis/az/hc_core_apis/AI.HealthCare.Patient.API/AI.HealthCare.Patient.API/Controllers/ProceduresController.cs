@@ -109,6 +109,19 @@ public class ProceduresController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>Bulk upserts procedures from a CSV file (Synthea procedures.csv format). Rows matching an existing Patient+Encounter+Code combination are updated in place; others are inserted. Matching Patient and Encounter records must already exist.</summary>
+    [HttpPost("import/upsert")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> ImportUpsert(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _procedureBL.ImportUpsert(file.OpenReadStream());
+        return Ok(result);
+    }
+
     /// <summary>Deletes a procedure by Id.</summary>
     [HttpDelete("{id:long}")]
     public async Task<IActionResult> Delete(long id)

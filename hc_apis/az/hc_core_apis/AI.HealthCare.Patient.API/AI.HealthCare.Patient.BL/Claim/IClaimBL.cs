@@ -12,4 +12,5 @@ public interface IClaimBL
     Task<ClaimsModel> Update(ClaimsModel claimsModel);
     Task<ClaimsModel> Delete(ClaimsModel claimsModel);
     Task<ImportResult> Import(Stream csvStream);
+    Task<ImportResult> ImportUpsert(Stream csvStream);
 }

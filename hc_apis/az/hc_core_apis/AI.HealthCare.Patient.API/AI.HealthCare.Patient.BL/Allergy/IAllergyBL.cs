@@ -12,4 +12,5 @@ public interface IAllergyBL
     Task<AllergiesModel> Update(AllergiesModel allergiesModel);
     Task<AllergiesModel> Delete(AllergiesModel allergiesModel);
     Task<ImportResult> Import(Stream csvStream);
+    Task<ImportResult> ImportUpsert(Stream csvStream);
 }

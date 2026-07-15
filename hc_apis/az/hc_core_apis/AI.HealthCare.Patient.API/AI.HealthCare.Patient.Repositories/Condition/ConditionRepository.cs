@@ -49,6 +49,35 @@ public class ConditionRepository : IConditionRepository
         _context.ChangeTracker.Clear();
     }
 
+    public async Task UpsertBatch(List<ConditionItem> conditionItems)
+    {
+        var patientIds = conditionItems.Select(c => c.PatientId).ToHashSet();
+
+        var existingEntities = await _context.Conditions
+            .Where(c => patientIds.Contains(c.PatientId))
+            .ToListAsync();
+        var existingByKey = existingEntities.ToLookup(e => (e.PatientId, e.EncounterId, e.Code));
+
+        foreach (var item in conditionItems)
+        {
+            var match = existingByKey[(item.PatientId, item.EncounterId, item.Code)].FirstOrDefault();
+            if (match is not null)
+            {
+                match.Start = item.Start;
+                match.Stop = item.Stop;
+                match.System = item.System;
+                match.Description = item.Description;
+            }
+            else
+            {
+                _context.Conditions.Add(_mapper.ToEntity(item));
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<ConditionItem?> Update(ConditionItem conditionItem)
     {
         var entity = await _context.Conditions.FirstOrDefaultAsync(c => c.Id == conditionItem.Id);

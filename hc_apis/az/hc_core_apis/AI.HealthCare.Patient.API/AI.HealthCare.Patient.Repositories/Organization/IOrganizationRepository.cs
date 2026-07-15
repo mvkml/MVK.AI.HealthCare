@@ -8,6 +8,7 @@ public interface IOrganizationRepository
     Task<List<OrganizationItem>> GetAll();
     Task<OrganizationItem> Create(OrganizationItem organizationItem);
     Task CreateBatch(List<OrganizationItem> organizationItems);
+    Task UpsertBatch(List<OrganizationItem> organizationItems);
     Task<OrganizationItem?> Update(OrganizationItem organizationItem);
     Task<bool> Delete(Guid id);
 }

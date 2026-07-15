@@ -49,6 +49,38 @@ public class ProcedureRepository : IProcedureRepository
         _context.ChangeTracker.Clear();
     }
 
+    public async Task UpsertBatch(List<ProcedureItem> procedureItems)
+    {
+        var patientIds = procedureItems.Select(p => p.PatientId).ToHashSet();
+
+        var existingEntities = await _context.Procedures
+            .Where(p => patientIds.Contains(p.PatientId))
+            .ToListAsync();
+        var existingByKey = existingEntities.ToLookup(e => (e.PatientId, e.EncounterId, e.Code));
+
+        foreach (var item in procedureItems)
+        {
+            var match = existingByKey[(item.PatientId, item.EncounterId, item.Code)].FirstOrDefault();
+            if (match is not null)
+            {
+                match.Start = item.Start;
+                match.Stop = item.Stop;
+                match.System = item.System;
+                match.Description = item.Description;
+                match.BaseCost = item.BaseCost;
+                match.ReasonCode = item.ReasonCode;
+                match.ReasonDescription = item.ReasonDescription;
+            }
+            else
+            {
+                _context.Procedures.Add(_mapper.ToEntity(item));
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<ProcedureItem?> Update(ProcedureItem procedureItem)
     {
         var entity = await _context.Procedures.FirstOrDefaultAsync(p => p.Id == procedureItem.Id);

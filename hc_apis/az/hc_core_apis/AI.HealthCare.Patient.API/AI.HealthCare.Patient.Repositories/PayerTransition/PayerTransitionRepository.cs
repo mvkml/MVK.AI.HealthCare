@@ -43,6 +43,37 @@ public class PayerTransitionRepository : IPayerTransitionRepository
         _context.ChangeTracker.Clear();
     }
 
+    public async Task UpsertBatch(List<PayerTransitionItem> payerTransitionItems)
+    {
+        var patientIds = payerTransitionItems.Select(pt => pt.PatientId).ToHashSet();
+
+        var existingEntities = await _context.PayerTransitions
+            .Where(pt => patientIds.Contains(pt.PatientId))
+            .ToListAsync();
+        var existingByKey = existingEntities.ToLookup(e => (e.PatientId, e.MemberId));
+
+        foreach (var item in payerTransitionItems)
+        {
+            var match = existingByKey[(item.PatientId, item.MemberId)].FirstOrDefault();
+            if (match is not null)
+            {
+                match.StartDate = item.StartDate;
+                match.EndDate = item.EndDate;
+                match.PayerId = item.PayerId;
+                match.SecondaryPayerId = item.SecondaryPayerId;
+                match.PlanOwnership = item.PlanOwnership;
+                match.OwnerName = item.OwnerName;
+            }
+            else
+            {
+                _context.PayerTransitions.Add(_mapper.ToEntity(item));
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<PayerTransitionItem?> Update(PayerTransitionItem payerTransitionItem)
     {
         var entity = await _context.PayerTransitions.FirstOrDefaultAsync(pt => pt.Id == payerTransitionItem.Id);

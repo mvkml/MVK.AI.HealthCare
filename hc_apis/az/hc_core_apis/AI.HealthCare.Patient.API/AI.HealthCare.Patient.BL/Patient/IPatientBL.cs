@@ -11,4 +11,5 @@ public interface IPatientBL
     Task<PatientsModel> Update(PatientsModel patientsModel);
     Task<PatientsModel> Delete(PatientsModel patientsModel);
     Task<ImportResult> Import(Stream csvStream);
+    Task<ImportResult> ImportUpsert(Stream csvStream);
 }

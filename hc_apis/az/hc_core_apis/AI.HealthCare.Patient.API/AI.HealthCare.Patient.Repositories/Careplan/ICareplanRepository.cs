@@ -9,6 +9,7 @@ public interface ICareplanRepository
     Task<List<CareplanItem>> GetByPatientId(Guid patientId);
     Task<CareplanItem> Create(CareplanItem careplanItem);
     Task CreateBatch(List<CareplanItem> careplanItems);
+    Task UpsertBatch(List<CareplanItem> careplanItems);
     Task<CareplanItem?> Update(CareplanItem careplanItem);
     Task<bool> Delete(Guid id);
 }

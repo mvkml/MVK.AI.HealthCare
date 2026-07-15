@@ -8,6 +8,7 @@ public interface IPayerTransitionRepository
     Task<List<PayerTransitionItem>> GetAll();
     Task<PayerTransitionItem> Create(PayerTransitionItem payerTransitionItem);
     Task CreateBatch(List<PayerTransitionItem> payerTransitionItems);
+    Task UpsertBatch(List<PayerTransitionItem> payerTransitionItems);
     Task<PayerTransitionItem?> Update(PayerTransitionItem payerTransitionItem);
     Task<bool> Delete(long id);
 }
