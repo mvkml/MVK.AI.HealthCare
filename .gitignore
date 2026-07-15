@@ -22,3 +22,6 @@ Thumbs.db
 # Generated/leftover bulk data (not source) — see hc_agile PB002/US002
 hc_bigdata/data/patient_details/synthea/
 hc_bigdata/data/employees.csv
+
+# Synthea CSV dataset copy under AI.HealthCare.Patient.API (same bulk data, not source)
+hc_apis/az/hc_core_apis/AI.HealthCare.Patient.API/documents/patient_details/synthea/
