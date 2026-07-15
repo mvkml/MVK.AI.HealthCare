@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"/c/git/hc\" && mkdir -p \\\\ *)",
+      "Bash(rsync -a --exclude='.venv' ./ \"/c/git/hc/hc_bigdata/\")",
+      "WebFetch(domain:mvkml.github.io)",
+      "Bash(git ls-remote *)",
+      "Bash(echo \"EXIT:$?\")",
+      "WebFetch(domain:github.com)",
+      "Bash(git -C \"/c/git/v\" remote -v)",
+      "Bash(git -C \"/c/git/hr\" remote -v)",
+      "Bash(git -C /c/git/health log --oneline -20)"
+    ]
+  }
+}

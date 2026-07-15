@@ -1,0 +1,15 @@
+# Visual Studio / Rider
+.vs/
+*.user
+
+# Build output (regenerated via dotnet build)
+bin/
+obj/
+
+# Local dev secrets/config — keep appsettings.json, ignore the per-developer override
+appsettings.Development.json
+
+# Other common .NET noise
+*.suo
+*.userosscache
+*.sln.docstates

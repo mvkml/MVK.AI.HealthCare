@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(py -0p)",
+      "Bash(where.exe java *)",
+      "PowerShell([System.Environment]::GetEnvironmentVariable\\(\"SPARK_HOME\",\"User\"\\); [System.Environment]::GetEnvironmentVariable\\(\"SPARK_HOME\",\"Machine\"\\); Write-Host \"---HADOOP---\"; [System.Environment]::GetEnvironmentVariable\\(\"HADOOP_HOME\",\"User\"\\); [System.Environment]::GetEnvironmentVariable\\(\"HADOOP_HOME\",\"Machine\"\\); Write-Host \"---PATH entries---\"; \\($env:Path -split ';'\\) | Select-String -Pattern \"spark|hadoop|java\" -SimpleMatch)",
+      "PowerShell(py -3.12 -m venv \"C:\\\\git\\\\v\\\\ai_hr\\\\hr_bigdata\\\\.venv\")",
+      "PowerShell(& \"C:\\\\git\\\\v\\\\ai_hr\\\\hr_bigdata\\\\.venv\\\\Scripts\\\\python.exe\" --version)",
+      "PowerShell(& \"C:\\\\git\\\\v\\\\ai_hr\\\\hr_bigdata\\\\.venv\\\\Scripts\\\\python.exe\" -m pip install --upgrade pip)",
+      "PowerShell(& \"C:\\\\git\\\\v\\\\ai_hr\\\\hr_bigdata\\\\.venv\\\\Scripts\\\\pip.exe\" install pyspark==3.5.5 jupyterlab)",
+      "PowerShell(Write-Host \"Fresh process JAVA_HOME =\" $env:JAVA_HOME)"
+    ],
+    "additionalDirectories": [
+      "C:\\hadoop",
+      "c:\\git\\v\\ai_hr\\hr_agile\\team",
+      "c:\\git\\v\\ai_hr"
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+# Terraform provider binaries and local state
+**/.terraform/*
+
+# Terraform state files
+*.tfstate
+*.tfstate.*
+
+# Terraform plan output
+tfplan
+*.tfplan
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Terraform CLI config
+.terraformrc
+terraform.rc
+
+# Variable files - may contain secrets (client_secret, keys, subscription IDs)
+**/*.tfvars
+
+# Blob test documents - PII / patient data, keep locally only
+**/blobs/*.jpg
+**/blobs/*.jpeg
+**/blobs/*.png
+**/blobs/*.pdf
+
+# Override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json

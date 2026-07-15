@@ -1,0 +1,15 @@
+# Visual Studio / Rider
+.vs/
+*.user
+
+# Build output (regenerated via dotnet build / func extensions install)
+bin/
+obj/
+
+# Azure Functions local dev secrets — never commit (connection strings, keys)
+local.settings.json
+
+# Other common .NET noise
+*.suo
+*.userosscache
+*.sln.docstates
