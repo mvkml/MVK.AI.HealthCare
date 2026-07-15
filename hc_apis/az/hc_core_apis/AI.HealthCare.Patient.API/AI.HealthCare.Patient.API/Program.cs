@@ -1,3 +1,4 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.EF.DBContexts;
 using AI.HealthCare.Patient.Repositories;
@@ -30,6 +31,7 @@ builder.Services.AddScoped<IConditionMapper, ConditionMapper>();
 builder.Services.AddScoped<IConditionRepository, ConditionRepository>();
 builder.Services.AddScoped<IAllergyMapper, AllergyMapper>();
 builder.Services.AddScoped<IAllergyRepository, AllergyRepository>();
+builder.Services.AddScoped<IAllergyCsvMapper, AllergyCsvMapper>();
 builder.Services.AddScoped<IMedicationMapper, MedicationMapper>();
 builder.Services.AddScoped<IMedicationRepository, MedicationRepository>();
 builder.Services.AddScoped<ICareplanMapper, CareplanMapper>();
@@ -74,6 +76,7 @@ builder.Services.AddScoped<IConditionValidationService, ConditionValidationServi
 
 builder.Services.AddScoped<IAllergyBL, AllergyBL>();
 builder.Services.AddScoped<IAllergyValidationService, AllergyValidationService>();
+builder.Services.AddScoped<ICsvFileValidator, CsvFileValidator>();
 
 builder.Services.AddScoped<IMedicationBL, MedicationBL>();
 builder.Services.AddScoped<IMedicationValidationService, MedicationValidationService>();

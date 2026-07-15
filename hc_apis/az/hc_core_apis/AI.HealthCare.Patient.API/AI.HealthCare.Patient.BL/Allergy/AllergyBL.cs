@@ -1,25 +1,30 @@
 using AI.HealthCare.Patient.Models.Allergy;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class AllergyBL : IAllergyBL
 {
-    private readonly IAllergyRepository _allergyRepository;
+    private const int ImportBatchSize = 500;
 
-    public AllergyBL(IAllergyRepository allergyRepository)
+    private readonly IAllergyRepository _allergyRepository;
+    private readonly IAllergyCsvMapper _csvMapper;
+
+    public AllergyBL(IAllergyRepository allergyRepository, IAllergyCsvMapper csvMapper)
     {
         _allergyRepository = allergyRepository;
+        _csvMapper = csvMapper;
     }
 
     public async Task<AllergiesModel> Create(AllergiesModel allergiesModel)
     {
-        allergiesModel.AllergyItem = ToItem(allergiesModel.AllergyRequest);
+        allergiesModel.AllergyItem = _csvMapper.ToItem(allergiesModel.AllergyRequest);
 
         var savedItem = await _allergyRepository.Create(allergiesModel.AllergyItem);
         allergiesModel.AllergyItem = savedItem;
 
-        allergiesModel.AllergyResponse = ToResponse(savedItem);
+        allergiesModel.AllergyResponse = _csvMapper.ToResponse(savedItem);
         allergiesModel.IsNotValid = false;
         allergiesModel.Message = "Allergy created successfully.";
 
@@ -37,7 +42,7 @@ public class AllergyBL : IAllergyBL
         }
 
         allergiesModel.AllergyItem = item;
-        allergiesModel.AllergyResponse = ToResponse(item);
+        allergiesModel.AllergyResponse = _csvMapper.ToResponse(item);
         allergiesModel.IsNotValid = false;
         allergiesModel.Message = "Allergy retrieved successfully.";
         return allergiesModel;
@@ -73,12 +78,12 @@ public class AllergyBL : IAllergyBL
             return allergiesModel;
         }
 
-        var updatedItem = ToItem(allergiesModel.AllergyRequest);
+        var updatedItem = _csvMapper.ToItem(allergiesModel.AllergyRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _allergyRepository.Update(updatedItem);
         allergiesModel.AllergyItem = savedItem!;
-        allergiesModel.AllergyResponse = ToResponse(savedItem!);
+        allergiesModel.AllergyResponse = _csvMapper.ToResponse(savedItem!);
         allergiesModel.IsNotValid = false;
         allergiesModel.Message = "Allergy updated successfully.";
         return allergiesModel;
@@ -99,42 +104,60 @@ public class AllergyBL : IAllergyBL
         return allergiesModel;
     }
 
-    private static AllergyItem ToItem(AllergyRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        Start = request.Start,
-        Stop = request.Stop,
-        PatientId = request.PatientId,
-        EncounterId = request.EncounterId,
-        Code = request.Code,
-        System = request.System,
-        Description = request.Description,
-        Type = request.Type,
-        Category = request.Category,
-        Reaction1 = request.Reaction1,
-        Description1 = request.Description1,
-        Severity1 = request.Severity1,
-        Reaction2 = request.Reaction2,
-        Description2 = request.Description2,
-        Severity2 = request.Severity2
-    };
+        var result = new ImportResult();
+        var batch = new List<AllergyItem>();
 
-    private static AllergyResponse ToResponse(AllergyItem item) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_csvMapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<AllergyItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        Start = item.Start,
-        Stop = item.Stop,
-        PatientId = item.PatientId,
-        EncounterId = item.EncounterId,
-        Code = item.Code,
-        System = item.System,
-        Description = item.Description,
-        Type = item.Type,
-        Category = item.Category,
-        Reaction1 = item.Reaction1,
-        Description1 = item.Description1,
-        Severity1 = item.Severity1,
-        Reaction2 = item.Reaction2,
-        Description2 = item.Description2,
-        Severity2 = item.Severity2
-    };
+        try
+        {
+            await _allergyRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
 }

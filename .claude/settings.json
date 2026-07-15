@@ -36,7 +36,10 @@
       "PowerShell(try { $r = Invoke-WebRequest -Uri 'https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc_auth/12.6.1.x64/mssql-jdbc_auth-12.6.1.x64.jar' -Method Head -UseBasicParsing -TimeoutSec 10; Write-Output \"Status: $\\($r.StatusCode\\)\" } catch { Write-Output \"Error: $\\($_.Exception.Message\\)\" })",
       "PowerShell(\\(Invoke-WebRequest -Uri 'https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc_auth/12.6.1.x64/' -UseBasicParsing -TimeoutSec 10\\).Links | Select-Object -ExpandProperty href)",
       "PowerShell(Invoke-WebRequest -Uri 'https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc_auth/12.6.1.x64/mssql-jdbc_auth-12.6.1.x64.dll' -OutFile 'C:\\\\git\\\\health\\\\hc_bigdata\\\\native\\\\mssql-jdbc_auth-12.6.1.x64.dll' -TimeoutSec 30)",
-      "Bash(awk '{print $1}')"
+      "Bash(awk '{print $1}')",
+      "Bash(where dotnet *)",
+      "Bash(dotnet --version)",
+      "Bash(git status *)"
     ]
   }
 }

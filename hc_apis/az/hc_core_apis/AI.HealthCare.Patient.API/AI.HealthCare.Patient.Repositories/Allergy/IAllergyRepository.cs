@@ -8,6 +8,7 @@ public interface IAllergyRepository
     Task<List<AllergyItem>> GetAll();
     Task<List<AllergyItem>> GetByPatientId(Guid patientId);
     Task<AllergyItem> Create(AllergyItem allergyItem);
+    Task CreateBatch(List<AllergyItem> allergyItems);
     Task<AllergyItem?> Update(AllergyItem allergyItem);
     Task<bool> Delete(long id);
 }

@@ -41,6 +41,14 @@ public class AllergyRepository : IAllergyRepository
         return _mapper.ToModel(entity);
     }
 
+    public async Task CreateBatch(List<AllergyItem> allergyItems)
+    {
+        var entities = allergyItems.Select(_mapper.ToEntity);
+        _context.Allergies.AddRange(entities);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<AllergyItem?> Update(AllergyItem allergyItem)
     {
         var entity = await _context.Allergies.FirstOrDefaultAsync(a => a.Id == allergyItem.Id);

@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.Allergy;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class AllergiesController : ControllerBase
 {
     private readonly IAllergyBL _allergyBL;
     private readonly IAllergyValidationService _allergyValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public AllergiesController(IAllergyBL allergyBL, IAllergyValidationService allergyValidationService)
+    public AllergiesController(IAllergyBL allergyBL, IAllergyValidationService allergyValidationService, ICsvFileValidator csvFileValidator)
     {
         _allergyBL = allergyBL;
         _allergyValidationService = allergyValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new allergy.</summary>
@@ -90,6 +94,19 @@ public class AllergiesController : ControllerBase
             return NotFound(allergiesModel.Message);
 
         return Ok(allergiesModel.AllergyResponse);
+    }
+
+    /// <summary>Bulk imports allergies from a CSV file (Synthea allergies.csv format). Matching Patient and Encounter records must already exist.</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _allergyBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes an allergy by Id.</summary>
