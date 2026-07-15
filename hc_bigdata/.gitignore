@@ -1,1 +1,4 @@
 .venv/
+
+# Third-party native binaries (downloaded, not source) — see setup docs for fetch steps
+native/

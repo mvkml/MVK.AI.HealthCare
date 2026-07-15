@@ -1,0 +1,12 @@
+{
+  "sql_server": {
+    "host": "localhost",
+    "instance": "SQLEXPRESS",
+    "port": 1433,
+    "database": "mvkhc",
+    "auth_mode": "windows_integrated",
+    "driver_class": "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+    "jdbc_url": "jdbc:sqlserver://localhost:1433;databaseName=mvkhc;integratedSecurity=true;encrypt=true;trustServerCertificate=true;",
+    "maven_package": "com.microsoft.sqlserver:mssql-jdbc:12.6.1.jre11"
+  }
+}

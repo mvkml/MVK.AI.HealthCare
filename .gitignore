@@ -16,6 +16,9 @@ graphify-out/cache/
 .DS_Store
 Thumbs.db
 
+# Jupyter autosave checkpoints (regenerable, not source)
+.ipynb_checkpoints/
+
 # Generated/leftover bulk data (not source) — see hc_agile PB002/US002
 hc_bigdata/data/patient_details/synthea/
 hc_bigdata/data/employees.csv
