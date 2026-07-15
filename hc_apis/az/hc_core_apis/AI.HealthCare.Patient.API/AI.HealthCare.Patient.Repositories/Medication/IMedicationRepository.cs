@@ -8,6 +8,7 @@ public interface IMedicationRepository
     Task<List<MedicationItem>> GetAll();
     Task<List<MedicationItem>> GetByPatientId(Guid patientId);
     Task<MedicationItem> Create(MedicationItem medicationItem);
+    Task CreateBatch(List<MedicationItem> medicationItems);
     Task<MedicationItem?> Update(MedicationItem medicationItem);
     Task<bool> Delete(long id);
 }

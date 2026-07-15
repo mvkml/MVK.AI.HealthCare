@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.Procedure;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class ProceduresController : ControllerBase
 {
     private readonly IProcedureBL _procedureBL;
     private readonly IProcedureValidationService _procedureValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public ProceduresController(IProcedureBL procedureBL, IProcedureValidationService procedureValidationService)
+    public ProceduresController(IProcedureBL procedureBL, IProcedureValidationService procedureValidationService, ICsvFileValidator csvFileValidator)
     {
         _procedureBL = procedureBL;
         _procedureValidationService = procedureValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new procedure.</summary>
@@ -90,6 +94,19 @@ public class ProceduresController : ControllerBase
             return NotFound(proceduresModel.Message);
 
         return Ok(proceduresModel.ProcedureResponse);
+    }
+
+    /// <summary>Bulk imports procedures from a CSV file (Synthea procedures.csv format). Matching Patient and Encounter records must already exist.</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _procedureBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes a procedure by Id.</summary>

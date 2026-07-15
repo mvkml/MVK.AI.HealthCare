@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.Condition;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class ConditionsController : ControllerBase
 {
     private readonly IConditionBL _conditionBL;
     private readonly IConditionValidationService _conditionValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public ConditionsController(IConditionBL conditionBL, IConditionValidationService conditionValidationService)
+    public ConditionsController(IConditionBL conditionBL, IConditionValidationService conditionValidationService, ICsvFileValidator csvFileValidator)
     {
         _conditionBL = conditionBL;
         _conditionValidationService = conditionValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new condition.</summary>
@@ -90,6 +94,19 @@ public class ConditionsController : ControllerBase
             return NotFound(conditionsModel.Message);
 
         return Ok(conditionsModel.ConditionResponse);
+    }
+
+    /// <summary>Bulk imports conditions from a CSV file (Synthea conditions.csv format). Matching Patient and Encounter records must already exist.</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _conditionBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes a condition by Id.</summary>

@@ -1,26 +1,31 @@
 using AI.HealthCare.Patient.Models.Careplan;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class CareplanBL : ICareplanBL
 {
-    private readonly ICareplanRepository _careplanRepository;
+    private const int ImportBatchSize = 500;
 
-    public CareplanBL(ICareplanRepository careplanRepository)
+    private readonly ICareplanRepository _careplanRepository;
+    private readonly ICareplanBLMapper _mapper;
+
+    public CareplanBL(ICareplanRepository careplanRepository, ICareplanBLMapper mapper)
     {
         _careplanRepository = careplanRepository;
+        _mapper = mapper;
     }
 
     public async Task<CareplansModel> Create(CareplansModel careplansModel)
     {
-        careplansModel.CareplanItem = ToItem(careplansModel.CareplanRequest);
+        careplansModel.CareplanItem = _mapper.ToItem(careplansModel.CareplanRequest);
         careplansModel.CareplanItem.Id = Guid.NewGuid();
 
         var savedItem = await _careplanRepository.Create(careplansModel.CareplanItem);
         careplansModel.CareplanItem = savedItem;
 
-        careplansModel.CareplanResponse = ToResponse(savedItem);
+        careplansModel.CareplanResponse = _mapper.ToResponse(savedItem);
         careplansModel.IsNotValid = false;
         careplansModel.Message = "Careplan created successfully.";
 
@@ -38,7 +43,7 @@ public class CareplanBL : ICareplanBL
         }
 
         careplansModel.CareplanItem = item;
-        careplansModel.CareplanResponse = ToResponse(item);
+        careplansModel.CareplanResponse = _mapper.ToResponse(item);
         careplansModel.IsNotValid = false;
         careplansModel.Message = "Careplan retrieved successfully.";
         return careplansModel;
@@ -74,12 +79,12 @@ public class CareplanBL : ICareplanBL
             return careplansModel;
         }
 
-        var updatedItem = ToItem(careplansModel.CareplanRequest);
+        var updatedItem = _mapper.ToItem(careplansModel.CareplanRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _careplanRepository.Update(updatedItem);
         careplansModel.CareplanItem = savedItem!;
-        careplansModel.CareplanResponse = ToResponse(savedItem!);
+        careplansModel.CareplanResponse = _mapper.ToResponse(savedItem!);
         careplansModel.IsNotValid = false;
         careplansModel.Message = "Careplan updated successfully.";
         return careplansModel;
@@ -100,28 +105,60 @@ public class CareplanBL : ICareplanBL
         return careplansModel;
     }
 
-    private static CareplanItem ToItem(CareplanRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        Start = request.Start,
-        Stop = request.Stop,
-        PatientId = request.PatientId,
-        EncounterId = request.EncounterId,
-        Code = request.Code,
-        Description = request.Description,
-        ReasonCode = request.ReasonCode,
-        ReasonDescription = request.ReasonDescription
-    };
+        var result = new ImportResult();
+        var batch = new List<CareplanItem>();
 
-    private static CareplanResponse ToResponse(CareplanItem item) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_mapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<CareplanItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        Start = item.Start,
-        Stop = item.Stop,
-        PatientId = item.PatientId,
-        EncounterId = item.EncounterId,
-        Code = item.Code,
-        Description = item.Description,
-        ReasonCode = item.ReasonCode,
-        ReasonDescription = item.ReasonDescription
-    };
+        try
+        {
+            await _careplanRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
 }

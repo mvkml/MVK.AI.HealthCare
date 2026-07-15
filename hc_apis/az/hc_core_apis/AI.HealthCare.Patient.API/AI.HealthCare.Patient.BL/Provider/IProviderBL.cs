@@ -1,4 +1,5 @@
 using AI.HealthCare.Patient.Models.Provider;
+using AI.HealthCare.Patient.Models.Shared;
 
 namespace AI.HealthCare.Patient.BL;
 
@@ -9,4 +10,5 @@ public interface IProviderBL
     Task<ProvidersModel> GetAll(ProvidersModel providersModel);
     Task<ProvidersModel> Update(ProvidersModel providersModel);
     Task<ProvidersModel> Delete(ProvidersModel providersModel);
+    Task<ImportResult> Import(Stream csvStream);
 }

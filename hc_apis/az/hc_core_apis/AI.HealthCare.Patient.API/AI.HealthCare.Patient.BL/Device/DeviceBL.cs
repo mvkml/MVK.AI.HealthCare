@@ -1,25 +1,30 @@
 using AI.HealthCare.Patient.Models.Device;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class DeviceBL : IDeviceBL
 {
-    private readonly IDeviceRepository _deviceRepository;
+    private const int ImportBatchSize = 500;
 
-    public DeviceBL(IDeviceRepository deviceRepository)
+    private readonly IDeviceRepository _deviceRepository;
+    private readonly IDeviceBLMapper _mapper;
+
+    public DeviceBL(IDeviceRepository deviceRepository, IDeviceBLMapper mapper)
     {
         _deviceRepository = deviceRepository;
+        _mapper = mapper;
     }
 
     public async Task<DevicesModel> Create(DevicesModel devicesModel)
     {
-        devicesModel.DeviceItem = ToItem(devicesModel.DeviceRequest);
+        devicesModel.DeviceItem = _mapper.ToItem(devicesModel.DeviceRequest);
 
         var savedItem = await _deviceRepository.Create(devicesModel.DeviceItem);
         devicesModel.DeviceItem = savedItem;
 
-        devicesModel.DeviceResponse = ToResponse(savedItem);
+        devicesModel.DeviceResponse = _mapper.ToResponse(savedItem);
         devicesModel.IsNotValid = false;
         devicesModel.Message = "Device created successfully.";
 
@@ -37,7 +42,7 @@ public class DeviceBL : IDeviceBL
         }
 
         devicesModel.DeviceItem = item;
-        devicesModel.DeviceResponse = ToResponse(item);
+        devicesModel.DeviceResponse = _mapper.ToResponse(item);
         devicesModel.IsNotValid = false;
         devicesModel.Message = "Device retrieved successfully.";
         return devicesModel;
@@ -73,12 +78,12 @@ public class DeviceBL : IDeviceBL
             return devicesModel;
         }
 
-        var updatedItem = ToItem(devicesModel.DeviceRequest);
+        var updatedItem = _mapper.ToItem(devicesModel.DeviceRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _deviceRepository.Update(updatedItem);
         devicesModel.DeviceItem = savedItem!;
-        devicesModel.DeviceResponse = ToResponse(savedItem!);
+        devicesModel.DeviceResponse = _mapper.ToResponse(savedItem!);
         devicesModel.IsNotValid = false;
         devicesModel.Message = "Device updated successfully.";
         return devicesModel;
@@ -99,26 +104,60 @@ public class DeviceBL : IDeviceBL
         return devicesModel;
     }
 
-    private static DeviceItem ToItem(DeviceRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        Start = request.Start,
-        Stop = request.Stop,
-        PatientId = request.PatientId,
-        EncounterId = request.EncounterId,
-        Code = request.Code,
-        Description = request.Description,
-        Udi = request.Udi
-    };
+        var result = new ImportResult();
+        var batch = new List<DeviceItem>();
 
-    private static DeviceResponse ToResponse(DeviceItem item) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_mapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<DeviceItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        Start = item.Start,
-        Stop = item.Stop,
-        PatientId = item.PatientId,
-        EncounterId = item.EncounterId,
-        Code = item.Code,
-        Description = item.Description,
-        Udi = item.Udi
-    };
+        try
+        {
+            await _deviceRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
 }

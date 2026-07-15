@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.Careplan;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class CareplansController : ControllerBase
 {
     private readonly ICareplanBL _careplanBL;
     private readonly ICareplanValidationService _careplanValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public CareplansController(ICareplanBL careplanBL, ICareplanValidationService careplanValidationService)
+    public CareplansController(ICareplanBL careplanBL, ICareplanValidationService careplanValidationService, ICsvFileValidator csvFileValidator)
     {
         _careplanBL = careplanBL;
         _careplanValidationService = careplanValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new careplan.</summary>
@@ -90,6 +94,19 @@ public class CareplansController : ControllerBase
             return NotFound(careplansModel.Message);
 
         return Ok(careplansModel.CareplanResponse);
+    }
+
+    /// <summary>Bulk imports careplans from a CSV file (Synthea careplans.csv format). Matching Patient and Encounter records must already exist.</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _careplanBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes a careplan by Id.</summary>

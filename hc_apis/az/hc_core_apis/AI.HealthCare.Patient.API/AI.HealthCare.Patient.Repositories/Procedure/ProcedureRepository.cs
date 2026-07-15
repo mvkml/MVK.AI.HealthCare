@@ -41,6 +41,14 @@ public class ProcedureRepository : IProcedureRepository
         return _mapper.ToModel(entity);
     }
 
+    public async Task CreateBatch(List<ProcedureItem> procedureItems)
+    {
+        var entities = procedureItems.Select(_mapper.ToEntity);
+        _context.Procedures.AddRange(entities);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<ProcedureItem?> Update(ProcedureItem procedureItem)
     {
         var entity = await _context.Procedures.FirstOrDefaultAsync(p => p.Id == procedureItem.Id);

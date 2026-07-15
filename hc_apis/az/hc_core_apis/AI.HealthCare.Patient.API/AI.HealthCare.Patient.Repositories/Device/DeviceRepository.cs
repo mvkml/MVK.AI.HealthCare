@@ -41,6 +41,14 @@ public class DeviceRepository : IDeviceRepository
         return _mapper.ToModel(entity);
     }
 
+    public async Task CreateBatch(List<DeviceItem> deviceItems)
+    {
+        var entities = deviceItems.Select(_mapper.ToEntity);
+        _context.Devices.AddRange(entities);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<DeviceItem?> Update(DeviceItem deviceItem)
     {
         var entity = await _context.Devices.FirstOrDefaultAsync(d => d.Id == deviceItem.Id);

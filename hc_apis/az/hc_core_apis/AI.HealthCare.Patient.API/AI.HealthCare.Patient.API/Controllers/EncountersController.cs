@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.Encounter;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class EncountersController : ControllerBase
 {
     private readonly IEncounterBL _encounterBL;
     private readonly IEncounterValidationService _encounterValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public EncountersController(IEncounterBL encounterBL, IEncounterValidationService encounterValidationService)
+    public EncountersController(IEncounterBL encounterBL, IEncounterValidationService encounterValidationService, ICsvFileValidator csvFileValidator)
     {
         _encounterBL = encounterBL;
         _encounterValidationService = encounterValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new encounter.</summary>
@@ -90,6 +94,19 @@ public class EncountersController : ControllerBase
             return NotFound(encountersModel.Message);
 
         return Ok(encountersModel.EncounterResponse);
+    }
+
+    /// <summary>Bulk imports encounters from a CSV file (Synthea encounters.csv format). Matching Patient, Organization, Provider, and Payer records must already exist.</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _encounterBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes an encounter by Id.</summary>

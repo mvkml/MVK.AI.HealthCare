@@ -1,26 +1,31 @@
 using AI.HealthCare.Patient.Models.Patient;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class PatientBL : IPatientBL
 {
-    private readonly IPatientRepository _patientRepository;
+    private const int ImportBatchSize = 500;
 
-    public PatientBL(IPatientRepository patientRepository)
+    private readonly IPatientRepository _patientRepository;
+    private readonly IPatientBLMapper _mapper;
+
+    public PatientBL(IPatientRepository patientRepository, IPatientBLMapper mapper)
     {
         _patientRepository = patientRepository;
+        _mapper = mapper;
     }
 
     public async Task<PatientsModel> Create(PatientsModel patientsModel)
     {
-        patientsModel.PatientItem = ToPatientItem(patientsModel.PatientRequest);
+        patientsModel.PatientItem = _mapper.ToItem(patientsModel.PatientRequest);
         patientsModel.PatientItem.Id = Guid.NewGuid();
 
         var savedItem = await _patientRepository.Create(patientsModel.PatientItem);
         patientsModel.PatientItem = savedItem;
 
-        patientsModel.PatientResponse = ToResponse(savedItem, patientsModel.IncludePii);
+        patientsModel.PatientResponse = _mapper.ToResponse(savedItem, patientsModel.IncludePii);
         patientsModel.IsNotValid = false;
         patientsModel.Message = "Patient created successfully.";
 
@@ -38,7 +43,7 @@ public class PatientBL : IPatientBL
         }
 
         patientsModel.PatientItem = item;
-        patientsModel.PatientResponse = ToResponse(item, patientsModel.IncludePii);
+        patientsModel.PatientResponse = _mapper.ToResponse(item, patientsModel.IncludePii);
         patientsModel.IsNotValid = false;
         patientsModel.Message = "Patient retrieved successfully.";
         return patientsModel;
@@ -63,12 +68,12 @@ public class PatientBL : IPatientBL
             return patientsModel;
         }
 
-        var updatedItem = ToPatientItem(patientsModel.PatientRequest);
+        var updatedItem = _mapper.ToItem(patientsModel.PatientRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _patientRepository.Update(updatedItem);
         patientsModel.PatientItem = savedItem!;
-        patientsModel.PatientResponse = ToResponse(savedItem!, patientsModel.IncludePii);
+        patientsModel.PatientResponse = _mapper.ToResponse(savedItem!, patientsModel.IncludePii);
         patientsModel.IsNotValid = false;
         patientsModel.Message = "Patient updated successfully.";
         return patientsModel;
@@ -89,77 +94,60 @@ public class PatientBL : IPatientBL
         return patientsModel;
     }
 
-    private static PatientItem ToPatientItem(PatientRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        BirthDate = request.BirthDate,
-        DeathDate = request.DeathDate,
-        Ssn = request.Ssn,
-        Drivers = request.Drivers,
-        Passport = request.Passport,
-        Prefix = request.Prefix,
-        First = request.First,
-        Middle = request.Middle,
-        Last = request.Last,
-        Suffix = request.Suffix,
-        Maiden = request.Maiden,
-        Marital = request.Marital,
-        Race = request.Race,
-        Ethnicity = request.Ethnicity,
-        Gender = request.Gender,
-        Birthplace = request.Birthplace,
-        Address = request.Address,
-        City = request.City,
-        State = request.State,
-        County = request.County,
-        Fips = request.Fips,
-        Zip = request.Zip,
-        Lat = request.Lat,
-        Lon = request.Lon,
-        HealthcareExpenses = request.HealthcareExpenses,
-        HealthcareCoverage = request.HealthcareCoverage,
-        Income = request.Income
-    };
+        var result = new ImportResult();
+        var batch = new List<PatientItem>();
 
-    private static PatientResponse ToResponse(PatientItem item, bool includePii) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_mapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<PatientItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        Ssn = includePii ? Mask(item.Ssn) : null,
-        Drivers = includePii ? Mask(item.Drivers) : null,
-        Passport = includePii ? Mask(item.Passport) : null,
-        BirthDate = item.BirthDate,
-        DeathDate = item.DeathDate,
-        Prefix = item.Prefix,
-        First = item.First,
-        Middle = item.Middle,
-        Last = item.Last,
-        Suffix = item.Suffix,
-        Maiden = item.Maiden,
-        Marital = item.Marital,
-        Race = item.Race,
-        Ethnicity = item.Ethnicity,
-        Gender = item.Gender,
-        Birthplace = item.Birthplace,
-        Address = item.Address,
-        City = item.City,
-        State = item.State,
-        County = item.County,
-        Fips = item.Fips,
-        Zip = item.Zip,
-        Lat = item.Lat,
-        Lon = item.Lon,
-        HealthcareExpenses = item.HealthcareExpenses,
-        HealthcareCoverage = item.HealthcareCoverage,
-        Income = item.Income
-    };
-
-    /// <summary>Masks all but the last 4 characters, e.g. "999-83-4938" -> "***-**-4938". For demo/learning purposes only — not a substitute for real PII encryption at rest.</summary>
-    private static string? Mask(string? value)
-    {
-        if (string.IsNullOrEmpty(value)) return value;
-        if (value.Length <= 4) return new string('*', value.Length);
-
-        var visible = value[^4..];
-        var maskedPrefix = value[..^4].Select(c => c == '-' ? '-' : '*');
-        return new string(maskedPrefix.ToArray()) + visible;
+        try
+        {
+            await _patientRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
     }
 }

@@ -1,4 +1,5 @@
 using AI.HealthCare.Patient.Models.Encounter;
+using AI.HealthCare.Patient.Models.Shared;
 
 namespace AI.HealthCare.Patient.BL;
 
@@ -10,4 +11,5 @@ public interface IEncounterBL
     Task<EncountersModel> GetByPatientId(Guid patientId);
     Task<EncountersModel> Update(EncountersModel encountersModel);
     Task<EncountersModel> Delete(EncountersModel encountersModel);
+    Task<ImportResult> Import(Stream csvStream);
 }

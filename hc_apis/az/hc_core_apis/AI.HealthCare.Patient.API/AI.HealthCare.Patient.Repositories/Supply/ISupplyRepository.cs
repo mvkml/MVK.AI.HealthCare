@@ -8,6 +8,7 @@ public interface ISupplyRepository
     Task<List<SupplyItem>> GetAll();
     Task<List<SupplyItem>> GetByPatientId(Guid patientId);
     Task<SupplyItem> Create(SupplyItem supplyItem);
+    Task CreateBatch(List<SupplyItem> supplyItems);
     Task<SupplyItem?> Update(SupplyItem supplyItem);
     Task<bool> Delete(long id);
 }

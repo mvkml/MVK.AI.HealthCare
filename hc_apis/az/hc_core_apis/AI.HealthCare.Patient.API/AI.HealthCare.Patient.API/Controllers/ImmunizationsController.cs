@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.Immunization;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class ImmunizationsController : ControllerBase
 {
     private readonly IImmunizationBL _immunizationBL;
     private readonly IImmunizationValidationService _immunizationValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public ImmunizationsController(IImmunizationBL immunizationBL, IImmunizationValidationService immunizationValidationService)
+    public ImmunizationsController(IImmunizationBL immunizationBL, IImmunizationValidationService immunizationValidationService, ICsvFileValidator csvFileValidator)
     {
         _immunizationBL = immunizationBL;
         _immunizationValidationService = immunizationValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new immunization.</summary>
@@ -90,6 +94,19 @@ public class ImmunizationsController : ControllerBase
             return NotFound(immunizationsModel.Message);
 
         return Ok(immunizationsModel.ImmunizationResponse);
+    }
+
+    /// <summary>Bulk imports immunizations from a CSV file (Synthea immunizations.csv format). Matching Patient and Encounter records must already exist.</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _immunizationBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes an immunization by Id.</summary>

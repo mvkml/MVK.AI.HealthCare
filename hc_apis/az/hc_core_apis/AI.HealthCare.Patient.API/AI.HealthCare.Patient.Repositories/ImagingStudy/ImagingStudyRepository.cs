@@ -41,6 +41,14 @@ public class ImagingStudyRepository : IImagingStudyRepository
         return _mapper.ToModel(entity);
     }
 
+    public async Task CreateBatch(List<ImagingStudyItem> imagingStudyItems)
+    {
+        var entities = imagingStudyItems.Select(_mapper.ToEntity);
+        _context.ImagingStudies.AddRange(entities);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<ImagingStudyItem?> Update(ImagingStudyItem imagingStudyItem)
     {
         var entity = await _context.ImagingStudies.FirstOrDefaultAsync(i => i.Id == imagingStudyItem.Id);

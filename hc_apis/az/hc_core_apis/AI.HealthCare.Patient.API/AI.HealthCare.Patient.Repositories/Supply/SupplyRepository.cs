@@ -41,6 +41,14 @@ public class SupplyRepository : ISupplyRepository
         return _mapper.ToModel(entity);
     }
 
+    public async Task CreateBatch(List<SupplyItem> supplyItems)
+    {
+        var entities = supplyItems.Select(_mapper.ToEntity);
+        _context.Supplies.AddRange(entities);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<SupplyItem?> Update(SupplyItem supplyItem)
     {
         var entity = await _context.Supplies.FirstOrDefaultAsync(s => s.Id == supplyItem.Id);

@@ -1,25 +1,30 @@
 using AI.HealthCare.Patient.Models.Procedure;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class ProcedureBL : IProcedureBL
 {
-    private readonly IProcedureRepository _procedureRepository;
+    private const int ImportBatchSize = 500;
 
-    public ProcedureBL(IProcedureRepository procedureRepository)
+    private readonly IProcedureRepository _procedureRepository;
+    private readonly IProcedureBLMapper _mapper;
+
+    public ProcedureBL(IProcedureRepository procedureRepository, IProcedureBLMapper mapper)
     {
         _procedureRepository = procedureRepository;
+        _mapper = mapper;
     }
 
     public async Task<ProceduresModel> Create(ProceduresModel proceduresModel)
     {
-        proceduresModel.ProcedureItem = ToItem(proceduresModel.ProcedureRequest);
+        proceduresModel.ProcedureItem = _mapper.ToItem(proceduresModel.ProcedureRequest);
 
         var savedItem = await _procedureRepository.Create(proceduresModel.ProcedureItem);
         proceduresModel.ProcedureItem = savedItem;
 
-        proceduresModel.ProcedureResponse = ToResponse(savedItem);
+        proceduresModel.ProcedureResponse = _mapper.ToResponse(savedItem);
         proceduresModel.IsNotValid = false;
         proceduresModel.Message = "Procedure created successfully.";
 
@@ -37,7 +42,7 @@ public class ProcedureBL : IProcedureBL
         }
 
         proceduresModel.ProcedureItem = item;
-        proceduresModel.ProcedureResponse = ToResponse(item);
+        proceduresModel.ProcedureResponse = _mapper.ToResponse(item);
         proceduresModel.IsNotValid = false;
         proceduresModel.Message = "Procedure retrieved successfully.";
         return proceduresModel;
@@ -73,12 +78,12 @@ public class ProcedureBL : IProcedureBL
             return proceduresModel;
         }
 
-        var updatedItem = ToItem(proceduresModel.ProcedureRequest);
+        var updatedItem = _mapper.ToItem(proceduresModel.ProcedureRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _procedureRepository.Update(updatedItem);
         proceduresModel.ProcedureItem = savedItem!;
-        proceduresModel.ProcedureResponse = ToResponse(savedItem!);
+        proceduresModel.ProcedureResponse = _mapper.ToResponse(savedItem!);
         proceduresModel.IsNotValid = false;
         proceduresModel.Message = "Procedure updated successfully.";
         return proceduresModel;
@@ -99,32 +104,60 @@ public class ProcedureBL : IProcedureBL
         return proceduresModel;
     }
 
-    private static ProcedureItem ToItem(ProcedureRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        Start = request.Start,
-        Stop = request.Stop,
-        PatientId = request.PatientId,
-        EncounterId = request.EncounterId,
-        System = request.System,
-        Code = request.Code,
-        Description = request.Description,
-        BaseCost = request.BaseCost,
-        ReasonCode = request.ReasonCode,
-        ReasonDescription = request.ReasonDescription
-    };
+        var result = new ImportResult();
+        var batch = new List<ProcedureItem>();
 
-    private static ProcedureResponse ToResponse(ProcedureItem item) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_mapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<ProcedureItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        Start = item.Start,
-        Stop = item.Stop,
-        PatientId = item.PatientId,
-        EncounterId = item.EncounterId,
-        System = item.System,
-        Code = item.Code,
-        Description = item.Description,
-        BaseCost = item.BaseCost,
-        ReasonCode = item.ReasonCode,
-        ReasonDescription = item.ReasonDescription
-    };
+        try
+        {
+            await _procedureRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
 }

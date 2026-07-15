@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.Claim;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class ClaimsController : ControllerBase
 {
     private readonly IClaimBL _claimBL;
     private readonly IClaimValidationService _claimValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public ClaimsController(IClaimBL claimBL, IClaimValidationService claimValidationService)
+    public ClaimsController(IClaimBL claimBL, IClaimValidationService claimValidationService, ICsvFileValidator csvFileValidator)
     {
         _claimBL = claimBL;
         _claimValidationService = claimValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new claim.</summary>
@@ -90,6 +94,19 @@ public class ClaimsController : ControllerBase
             return NotFound(claimsModel.Message);
 
         return Ok(claimsModel.ClaimResponse);
+    }
+
+    /// <summary>Bulk imports claims from a CSV file (Synthea claims.csv format). Matching Patient and Provider records must already exist.</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _claimBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes a claim by Id.</summary>

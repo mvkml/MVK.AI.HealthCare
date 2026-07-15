@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.Device;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class DevicesController : ControllerBase
 {
     private readonly IDeviceBL _deviceBL;
     private readonly IDeviceValidationService _deviceValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public DevicesController(IDeviceBL deviceBL, IDeviceValidationService deviceValidationService)
+    public DevicesController(IDeviceBL deviceBL, IDeviceValidationService deviceValidationService, ICsvFileValidator csvFileValidator)
     {
         _deviceBL = deviceBL;
         _deviceValidationService = deviceValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new device.</summary>
@@ -90,6 +94,19 @@ public class DevicesController : ControllerBase
             return NotFound(devicesModel.Message);
 
         return Ok(devicesModel.DeviceResponse);
+    }
+
+    /// <summary>Bulk imports devices from a CSV file (Synthea devices.csv format). Matching Patient and Encounter records must already exist.</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _deviceBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes a device by Id.</summary>

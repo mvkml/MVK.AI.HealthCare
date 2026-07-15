@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.Medication;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class MedicationsController : ControllerBase
 {
     private readonly IMedicationBL _medicationBL;
     private readonly IMedicationValidationService _medicationValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public MedicationsController(IMedicationBL medicationBL, IMedicationValidationService medicationValidationService)
+    public MedicationsController(IMedicationBL medicationBL, IMedicationValidationService medicationValidationService, ICsvFileValidator csvFileValidator)
     {
         _medicationBL = medicationBL;
         _medicationValidationService = medicationValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new medication.</summary>
@@ -90,6 +94,19 @@ public class MedicationsController : ControllerBase
             return NotFound(medicationsModel.Message);
 
         return Ok(medicationsModel.MedicationResponse);
+    }
+
+    /// <summary>Bulk imports medications from a CSV file (Synthea medications.csv format). Matching Patient, Payer, and Encounter records must already exist.</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _medicationBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes a medication by Id.</summary>

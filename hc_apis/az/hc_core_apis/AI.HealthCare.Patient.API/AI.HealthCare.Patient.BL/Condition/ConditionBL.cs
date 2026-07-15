@@ -1,25 +1,30 @@
 using AI.HealthCare.Patient.Models.Condition;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class ConditionBL : IConditionBL
 {
-    private readonly IConditionRepository _conditionRepository;
+    private const int ImportBatchSize = 500;
 
-    public ConditionBL(IConditionRepository conditionRepository)
+    private readonly IConditionRepository _conditionRepository;
+    private readonly IConditionBLMapper _mapper;
+
+    public ConditionBL(IConditionRepository conditionRepository, IConditionBLMapper mapper)
     {
         _conditionRepository = conditionRepository;
+        _mapper = mapper;
     }
 
     public async Task<ConditionsModel> Create(ConditionsModel conditionsModel)
     {
-        conditionsModel.ConditionItem = ToItem(conditionsModel.ConditionRequest);
+        conditionsModel.ConditionItem = _mapper.ToItem(conditionsModel.ConditionRequest);
 
         var savedItem = await _conditionRepository.Create(conditionsModel.ConditionItem);
         conditionsModel.ConditionItem = savedItem;
 
-        conditionsModel.ConditionResponse = ToResponse(savedItem);
+        conditionsModel.ConditionResponse = _mapper.ToResponse(savedItem);
         conditionsModel.IsNotValid = false;
         conditionsModel.Message = "Condition created successfully.";
 
@@ -37,7 +42,7 @@ public class ConditionBL : IConditionBL
         }
 
         conditionsModel.ConditionItem = item;
-        conditionsModel.ConditionResponse = ToResponse(item);
+        conditionsModel.ConditionResponse = _mapper.ToResponse(item);
         conditionsModel.IsNotValid = false;
         conditionsModel.Message = "Condition retrieved successfully.";
         return conditionsModel;
@@ -73,12 +78,12 @@ public class ConditionBL : IConditionBL
             return conditionsModel;
         }
 
-        var updatedItem = ToItem(conditionsModel.ConditionRequest);
+        var updatedItem = _mapper.ToItem(conditionsModel.ConditionRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _conditionRepository.Update(updatedItem);
         conditionsModel.ConditionItem = savedItem!;
-        conditionsModel.ConditionResponse = ToResponse(savedItem!);
+        conditionsModel.ConditionResponse = _mapper.ToResponse(savedItem!);
         conditionsModel.IsNotValid = false;
         conditionsModel.Message = "Condition updated successfully.";
         return conditionsModel;
@@ -99,26 +104,60 @@ public class ConditionBL : IConditionBL
         return conditionsModel;
     }
 
-    private static ConditionItem ToItem(ConditionRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        Start = request.Start,
-        Stop = request.Stop,
-        PatientId = request.PatientId,
-        EncounterId = request.EncounterId,
-        System = request.System,
-        Code = request.Code,
-        Description = request.Description
-    };
+        var result = new ImportResult();
+        var batch = new List<ConditionItem>();
 
-    private static ConditionResponse ToResponse(ConditionItem item) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_mapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<ConditionItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        Start = item.Start,
-        Stop = item.Stop,
-        PatientId = item.PatientId,
-        EncounterId = item.EncounterId,
-        System = item.System,
-        Code = item.Code,
-        Description = item.Description
-    };
+        try
+        {
+            await _conditionRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
 }

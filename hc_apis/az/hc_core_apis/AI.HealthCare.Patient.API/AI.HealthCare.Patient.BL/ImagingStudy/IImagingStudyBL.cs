@@ -1,4 +1,5 @@
 using AI.HealthCare.Patient.Models.ImagingStudy;
+using AI.HealthCare.Patient.Models.Shared;
 
 namespace AI.HealthCare.Patient.BL;
 
@@ -10,4 +11,5 @@ public interface IImagingStudyBL
     Task<ImagingStudiesModel> GetByPatientId(Guid patientId);
     Task<ImagingStudiesModel> Update(ImagingStudiesModel imagingStudiesModel);
     Task<ImagingStudiesModel> Delete(ImagingStudiesModel imagingStudiesModel);
+    Task<ImportResult> Import(Stream csvStream);
 }

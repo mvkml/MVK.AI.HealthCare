@@ -1,26 +1,31 @@
 using AI.HealthCare.Patient.Models.ImagingStudy;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class ImagingStudyBL : IImagingStudyBL
 {
-    private readonly IImagingStudyRepository _imagingStudyRepository;
+    private const int ImportBatchSize = 500;
 
-    public ImagingStudyBL(IImagingStudyRepository imagingStudyRepository)
+    private readonly IImagingStudyRepository _imagingStudyRepository;
+    private readonly IImagingStudyBLMapper _mapper;
+
+    public ImagingStudyBL(IImagingStudyRepository imagingStudyRepository, IImagingStudyBLMapper mapper)
     {
         _imagingStudyRepository = imagingStudyRepository;
+        _mapper = mapper;
     }
 
     public async Task<ImagingStudiesModel> Create(ImagingStudiesModel imagingStudiesModel)
     {
-        imagingStudiesModel.ImagingStudyItem = ToItem(imagingStudiesModel.ImagingStudyRequest);
+        imagingStudiesModel.ImagingStudyItem = _mapper.ToItem(imagingStudiesModel.ImagingStudyRequest);
         imagingStudiesModel.ImagingStudyItem.Id = Guid.NewGuid();
 
         var savedItem = await _imagingStudyRepository.Create(imagingStudiesModel.ImagingStudyItem);
         imagingStudiesModel.ImagingStudyItem = savedItem;
 
-        imagingStudiesModel.ImagingStudyResponse = ToResponse(savedItem);
+        imagingStudiesModel.ImagingStudyResponse = _mapper.ToResponse(savedItem);
         imagingStudiesModel.IsNotValid = false;
         imagingStudiesModel.Message = "ImagingStudy created successfully.";
 
@@ -38,7 +43,7 @@ public class ImagingStudyBL : IImagingStudyBL
         }
 
         imagingStudiesModel.ImagingStudyItem = item;
-        imagingStudiesModel.ImagingStudyResponse = ToResponse(item);
+        imagingStudiesModel.ImagingStudyResponse = _mapper.ToResponse(item);
         imagingStudiesModel.IsNotValid = false;
         imagingStudiesModel.Message = "ImagingStudy retrieved successfully.";
         return imagingStudiesModel;
@@ -74,12 +79,12 @@ public class ImagingStudyBL : IImagingStudyBL
             return imagingStudiesModel;
         }
 
-        var updatedItem = ToItem(imagingStudiesModel.ImagingStudyRequest);
+        var updatedItem = _mapper.ToItem(imagingStudiesModel.ImagingStudyRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _imagingStudyRepository.Update(updatedItem);
         imagingStudiesModel.ImagingStudyItem = savedItem!;
-        imagingStudiesModel.ImagingStudyResponse = ToResponse(savedItem!);
+        imagingStudiesModel.ImagingStudyResponse = _mapper.ToResponse(savedItem!);
         imagingStudiesModel.IsNotValid = false;
         imagingStudiesModel.Message = "ImagingStudy updated successfully.";
         return imagingStudiesModel;
@@ -100,36 +105,60 @@ public class ImagingStudyBL : IImagingStudyBL
         return imagingStudiesModel;
     }
 
-    private static ImagingStudyItem ToItem(ImagingStudyRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        Date = request.Date,
-        PatientId = request.PatientId,
-        EncounterId = request.EncounterId,
-        SeriesUid = request.SeriesUid,
-        BodysiteCode = request.BodysiteCode,
-        BodysiteDescription = request.BodysiteDescription,
-        ModalityCode = request.ModalityCode,
-        ModalityDescription = request.ModalityDescription,
-        InstanceUid = request.InstanceUid,
-        SopCode = request.SopCode,
-        SopDescription = request.SopDescription,
-        ProcedureCode = request.ProcedureCode
-    };
+        var result = new ImportResult();
+        var batch = new List<ImagingStudyItem>();
 
-    private static ImagingStudyResponse ToResponse(ImagingStudyItem item) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_mapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<ImagingStudyItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        Date = item.Date,
-        PatientId = item.PatientId,
-        EncounterId = item.EncounterId,
-        SeriesUid = item.SeriesUid,
-        BodysiteCode = item.BodysiteCode,
-        BodysiteDescription = item.BodysiteDescription,
-        ModalityCode = item.ModalityCode,
-        ModalityDescription = item.ModalityDescription,
-        InstanceUid = item.InstanceUid,
-        SopCode = item.SopCode,
-        SopDescription = item.SopDescription,
-        ProcedureCode = item.ProcedureCode
-    };
+        try
+        {
+            await _imagingStudyRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
 }

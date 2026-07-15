@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.Provider;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class ProvidersController : ControllerBase
 {
     private readonly IProviderBL _providerBL;
     private readonly IProviderValidationService _providerValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public ProvidersController(IProviderBL providerBL, IProviderValidationService providerValidationService)
+    public ProvidersController(IProviderBL providerBL, IProviderValidationService providerValidationService, ICsvFileValidator csvFileValidator)
     {
         _providerBL = providerBL;
         _providerValidationService = providerValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new provider.</summary>
@@ -82,6 +86,19 @@ public class ProvidersController : ControllerBase
             return NotFound(providersModel.Message);
 
         return Ok(providersModel.ProviderResponse);
+    }
+
+    /// <summary>Bulk imports providers from a CSV file (Synthea providers.csv format). Matching Organization records must already exist.</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _providerBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes a provider by Id.</summary>

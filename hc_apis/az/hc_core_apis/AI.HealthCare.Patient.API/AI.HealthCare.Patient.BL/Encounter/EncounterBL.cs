@@ -1,26 +1,31 @@
 using AI.HealthCare.Patient.Models.Encounter;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class EncounterBL : IEncounterBL
 {
-    private readonly IEncounterRepository _encounterRepository;
+    private const int ImportBatchSize = 500;
 
-    public EncounterBL(IEncounterRepository encounterRepository)
+    private readonly IEncounterRepository _encounterRepository;
+    private readonly IEncounterBLMapper _mapper;
+
+    public EncounterBL(IEncounterRepository encounterRepository, IEncounterBLMapper mapper)
     {
         _encounterRepository = encounterRepository;
+        _mapper = mapper;
     }
 
     public async Task<EncountersModel> Create(EncountersModel encountersModel)
     {
-        encountersModel.EncounterItem = ToItem(encountersModel.EncounterRequest);
+        encountersModel.EncounterItem = _mapper.ToItem(encountersModel.EncounterRequest);
         encountersModel.EncounterItem.Id = Guid.NewGuid();
 
         var savedItem = await _encounterRepository.Create(encountersModel.EncounterItem);
         encountersModel.EncounterItem = savedItem;
 
-        encountersModel.EncounterResponse = ToResponse(savedItem);
+        encountersModel.EncounterResponse = _mapper.ToResponse(savedItem);
         encountersModel.IsNotValid = false;
         encountersModel.Message = "Encounter created successfully.";
 
@@ -38,7 +43,7 @@ public class EncounterBL : IEncounterBL
         }
 
         encountersModel.EncounterItem = item;
-        encountersModel.EncounterResponse = ToResponse(item);
+        encountersModel.EncounterResponse = _mapper.ToResponse(item);
         encountersModel.IsNotValid = false;
         encountersModel.Message = "Encounter retrieved successfully.";
         return encountersModel;
@@ -74,12 +79,12 @@ public class EncounterBL : IEncounterBL
             return encountersModel;
         }
 
-        var updatedItem = ToItem(encountersModel.EncounterRequest);
+        var updatedItem = _mapper.ToItem(encountersModel.EncounterRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _encounterRepository.Update(updatedItem);
         encountersModel.EncounterItem = savedItem!;
-        encountersModel.EncounterResponse = ToResponse(savedItem!);
+        encountersModel.EncounterResponse = _mapper.ToResponse(savedItem!);
         encountersModel.IsNotValid = false;
         encountersModel.Message = "Encounter updated successfully.";
         return encountersModel;
@@ -100,40 +105,60 @@ public class EncounterBL : IEncounterBL
         return encountersModel;
     }
 
-    private static EncounterItem ToItem(EncounterRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        Start = request.Start,
-        Stop = request.Stop,
-        PatientId = request.PatientId,
-        OrganizationId = request.OrganizationId,
-        ProviderId = request.ProviderId,
-        PayerId = request.PayerId,
-        EncounterClass = request.EncounterClass,
-        Code = request.Code,
-        Description = request.Description,
-        BaseEncounterCost = request.BaseEncounterCost,
-        TotalClaimCost = request.TotalClaimCost,
-        PayerCoverage = request.PayerCoverage,
-        ReasonCode = request.ReasonCode,
-        ReasonDescription = request.ReasonDescription
-    };
+        var result = new ImportResult();
+        var batch = new List<EncounterItem>();
 
-    private static EncounterResponse ToResponse(EncounterItem item) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_mapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<EncounterItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        Start = item.Start,
-        Stop = item.Stop,
-        PatientId = item.PatientId,
-        OrganizationId = item.OrganizationId,
-        ProviderId = item.ProviderId,
-        PayerId = item.PayerId,
-        EncounterClass = item.EncounterClass,
-        Code = item.Code,
-        Description = item.Description,
-        BaseEncounterCost = item.BaseEncounterCost,
-        TotalClaimCost = item.TotalClaimCost,
-        PayerCoverage = item.PayerCoverage,
-        ReasonCode = item.ReasonCode,
-        ReasonDescription = item.ReasonDescription
-    };
+        try
+        {
+            await _encounterRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
 }

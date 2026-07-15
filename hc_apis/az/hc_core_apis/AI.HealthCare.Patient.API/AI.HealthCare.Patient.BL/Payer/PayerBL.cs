@@ -1,26 +1,31 @@
 using AI.HealthCare.Patient.Models.Payer;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class PayerBL : IPayerBL
 {
-    private readonly IPayerRepository _payerRepository;
+    private const int ImportBatchSize = 500;
 
-    public PayerBL(IPayerRepository payerRepository)
+    private readonly IPayerRepository _payerRepository;
+    private readonly IPayerBLMapper _mapper;
+
+    public PayerBL(IPayerRepository payerRepository, IPayerBLMapper mapper)
     {
         _payerRepository = payerRepository;
+        _mapper = mapper;
     }
 
     public async Task<PayersModel> Create(PayersModel payersModel)
     {
-        payersModel.PayerItem = ToItem(payersModel.PayerRequest);
+        payersModel.PayerItem = _mapper.ToItem(payersModel.PayerRequest);
         payersModel.PayerItem.Id = Guid.NewGuid();
 
         var savedItem = await _payerRepository.Create(payersModel.PayerItem);
         payersModel.PayerItem = savedItem;
 
-        payersModel.PayerResponse = ToResponse(savedItem);
+        payersModel.PayerResponse = _mapper.ToResponse(savedItem);
         payersModel.IsNotValid = false;
         payersModel.Message = "Payer created successfully.";
 
@@ -38,7 +43,7 @@ public class PayerBL : IPayerBL
         }
 
         payersModel.PayerItem = item;
-        payersModel.PayerResponse = ToResponse(item);
+        payersModel.PayerResponse = _mapper.ToResponse(item);
         payersModel.IsNotValid = false;
         payersModel.Message = "Payer retrieved successfully.";
         return payersModel;
@@ -63,12 +68,12 @@ public class PayerBL : IPayerBL
             return payersModel;
         }
 
-        var updatedItem = ToItem(payersModel.PayerRequest);
+        var updatedItem = _mapper.ToItem(payersModel.PayerRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _payerRepository.Update(updatedItem);
         payersModel.PayerItem = savedItem!;
-        payersModel.PayerResponse = ToResponse(savedItem!);
+        payersModel.PayerResponse = _mapper.ToResponse(savedItem!);
         payersModel.IsNotValid = false;
         payersModel.Message = "Payer updated successfully.";
         return payersModel;
@@ -89,54 +94,60 @@ public class PayerBL : IPayerBL
         return payersModel;
     }
 
-    private static PayerItem ToItem(PayerRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        Name = request.Name,
-        Ownership = request.Ownership,
-        Address = request.Address,
-        City = request.City,
-        StateHeadquartered = request.StateHeadquartered,
-        Zip = request.Zip,
-        Phone = request.Phone,
-        AmountCovered = request.AmountCovered,
-        AmountUncovered = request.AmountUncovered,
-        Revenue = request.Revenue,
-        CoveredEncounters = request.CoveredEncounters,
-        UncoveredEncounters = request.UncoveredEncounters,
-        CoveredMedications = request.CoveredMedications,
-        UncoveredMedications = request.UncoveredMedications,
-        CoveredProcedures = request.CoveredProcedures,
-        UncoveredProcedures = request.UncoveredProcedures,
-        CoveredImmunizations = request.CoveredImmunizations,
-        UncoveredImmunizations = request.UncoveredImmunizations,
-        UniqueCustomers = request.UniqueCustomers,
-        QolsAvg = request.QolsAvg,
-        MemberMonths = request.MemberMonths
-    };
+        var result = new ImportResult();
+        var batch = new List<PayerItem>();
 
-    private static PayerResponse ToResponse(PayerItem item) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_mapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<PayerItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        Name = item.Name,
-        Ownership = item.Ownership,
-        Address = item.Address,
-        City = item.City,
-        StateHeadquartered = item.StateHeadquartered,
-        Zip = item.Zip,
-        Phone = item.Phone,
-        AmountCovered = item.AmountCovered,
-        AmountUncovered = item.AmountUncovered,
-        Revenue = item.Revenue,
-        CoveredEncounters = item.CoveredEncounters,
-        UncoveredEncounters = item.UncoveredEncounters,
-        CoveredMedications = item.CoveredMedications,
-        UncoveredMedications = item.UncoveredMedications,
-        CoveredProcedures = item.CoveredProcedures,
-        UncoveredProcedures = item.UncoveredProcedures,
-        CoveredImmunizations = item.CoveredImmunizations,
-        UncoveredImmunizations = item.UncoveredImmunizations,
-        UniqueCustomers = item.UniqueCustomers,
-        QolsAvg = item.QolsAvg,
-        MemberMonths = item.MemberMonths
-    };
+        try
+        {
+            await _payerRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
 }

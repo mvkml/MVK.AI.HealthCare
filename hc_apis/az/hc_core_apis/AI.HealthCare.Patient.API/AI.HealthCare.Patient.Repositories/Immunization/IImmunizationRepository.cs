@@ -8,6 +8,7 @@ public interface IImmunizationRepository
     Task<List<ImmunizationItem>> GetAll();
     Task<List<ImmunizationItem>> GetByPatientId(Guid patientId);
     Task<ImmunizationItem> Create(ImmunizationItem immunizationItem);
+    Task CreateBatch(List<ImmunizationItem> immunizationItems);
     Task<ImmunizationItem?> Update(ImmunizationItem immunizationItem);
     Task<bool> Delete(long id);
 }

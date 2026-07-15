@@ -1,4 +1,5 @@
 using AI.HealthCare.Patient.Models.Supply;
+using AI.HealthCare.Patient.Models.Shared;
 
 namespace AI.HealthCare.Patient.BL;
 
@@ -10,4 +11,5 @@ public interface ISupplyBL
     Task<SuppliesModel> GetByPatientId(Guid patientId);
     Task<SuppliesModel> Update(SuppliesModel suppliesModel);
     Task<SuppliesModel> Delete(SuppliesModel suppliesModel);
+    Task<ImportResult> Import(Stream csvStream);
 }

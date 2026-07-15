@@ -1,26 +1,31 @@
 using AI.HealthCare.Patient.Models.Provider;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class ProviderBL : IProviderBL
 {
-    private readonly IProviderRepository _providerRepository;
+    private const int ImportBatchSize = 500;
 
-    public ProviderBL(IProviderRepository providerRepository)
+    private readonly IProviderRepository _providerRepository;
+    private readonly IProviderBLMapper _mapper;
+
+    public ProviderBL(IProviderRepository providerRepository, IProviderBLMapper mapper)
     {
         _providerRepository = providerRepository;
+        _mapper = mapper;
     }
 
     public async Task<ProvidersModel> Create(ProvidersModel providersModel)
     {
-        providersModel.ProviderItem = ToItem(providersModel.ProviderRequest);
+        providersModel.ProviderItem = _mapper.ToItem(providersModel.ProviderRequest);
         providersModel.ProviderItem.Id = Guid.NewGuid();
 
         var savedItem = await _providerRepository.Create(providersModel.ProviderItem);
         providersModel.ProviderItem = savedItem;
 
-        providersModel.ProviderResponse = ToResponse(savedItem);
+        providersModel.ProviderResponse = _mapper.ToResponse(savedItem);
         providersModel.IsNotValid = false;
         providersModel.Message = "Provider created successfully.";
 
@@ -38,7 +43,7 @@ public class ProviderBL : IProviderBL
         }
 
         providersModel.ProviderItem = item;
-        providersModel.ProviderResponse = ToResponse(item);
+        providersModel.ProviderResponse = _mapper.ToResponse(item);
         providersModel.IsNotValid = false;
         providersModel.Message = "Provider retrieved successfully.";
         return providersModel;
@@ -63,12 +68,12 @@ public class ProviderBL : IProviderBL
             return providersModel;
         }
 
-        var updatedItem = ToItem(providersModel.ProviderRequest);
+        var updatedItem = _mapper.ToItem(providersModel.ProviderRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _providerRepository.Update(updatedItem);
         providersModel.ProviderItem = savedItem!;
-        providersModel.ProviderResponse = ToResponse(savedItem!);
+        providersModel.ProviderResponse = _mapper.ToResponse(savedItem!);
         providersModel.IsNotValid = false;
         providersModel.Message = "Provider updated successfully.";
         return providersModel;
@@ -89,36 +94,60 @@ public class ProviderBL : IProviderBL
         return providersModel;
     }
 
-    private static ProviderItem ToItem(ProviderRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        OrganizationId = request.OrganizationId,
-        Name = request.Name,
-        Gender = request.Gender,
-        Speciality = request.Speciality,
-        Address = request.Address,
-        City = request.City,
-        State = request.State,
-        Zip = request.Zip,
-        Lat = request.Lat,
-        Lon = request.Lon,
-        Encounters = request.Encounters,
-        Procedures = request.Procedures
-    };
+        var result = new ImportResult();
+        var batch = new List<ProviderItem>();
 
-    private static ProviderResponse ToResponse(ProviderItem item) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_mapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<ProviderItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        OrganizationId = item.OrganizationId,
-        Name = item.Name,
-        Gender = item.Gender,
-        Speciality = item.Speciality,
-        Address = item.Address,
-        City = item.City,
-        State = item.State,
-        Zip = item.Zip,
-        Lat = item.Lat,
-        Lon = item.Lon,
-        Encounters = item.Encounters,
-        Procedures = item.Procedures
-    };
+        try
+        {
+            await _providerRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
 }

@@ -1,4 +1,5 @@
 using AI.HealthCare.Patient.Models.Immunization;
+using AI.HealthCare.Patient.Models.Shared;
 
 namespace AI.HealthCare.Patient.BL;
 
@@ -10,4 +11,5 @@ public interface IImmunizationBL
     Task<ImmunizationsModel> GetByPatientId(Guid patientId);
     Task<ImmunizationsModel> Update(ImmunizationsModel immunizationsModel);
     Task<ImmunizationsModel> Delete(ImmunizationsModel immunizationsModel);
+    Task<ImportResult> Import(Stream csvStream);
 }

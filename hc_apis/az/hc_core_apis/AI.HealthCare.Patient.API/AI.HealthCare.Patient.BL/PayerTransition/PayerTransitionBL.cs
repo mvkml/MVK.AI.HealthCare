@@ -1,25 +1,30 @@
 using AI.HealthCare.Patient.Models.PayerTransition;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class PayerTransitionBL : IPayerTransitionBL
 {
-    private readonly IPayerTransitionRepository _payerTransitionRepository;
+    private const int ImportBatchSize = 500;
 
-    public PayerTransitionBL(IPayerTransitionRepository payerTransitionRepository)
+    private readonly IPayerTransitionRepository _payerTransitionRepository;
+    private readonly IPayerTransitionBLMapper _mapper;
+
+    public PayerTransitionBL(IPayerTransitionRepository payerTransitionRepository, IPayerTransitionBLMapper mapper)
     {
         _payerTransitionRepository = payerTransitionRepository;
+        _mapper = mapper;
     }
 
     public async Task<PayerTransitionsModel> Create(PayerTransitionsModel payerTransitionsModel)
     {
-        payerTransitionsModel.PayerTransitionItem = ToItem(payerTransitionsModel.PayerTransitionRequest);
+        payerTransitionsModel.PayerTransitionItem = _mapper.ToItem(payerTransitionsModel.PayerTransitionRequest);
 
         var savedItem = await _payerTransitionRepository.Create(payerTransitionsModel.PayerTransitionItem);
         payerTransitionsModel.PayerTransitionItem = savedItem;
 
-        payerTransitionsModel.PayerTransitionResponse = ToResponse(savedItem);
+        payerTransitionsModel.PayerTransitionResponse = _mapper.ToResponse(savedItem);
         payerTransitionsModel.IsNotValid = false;
         payerTransitionsModel.Message = "PayerTransition created successfully.";
 
@@ -37,7 +42,7 @@ public class PayerTransitionBL : IPayerTransitionBL
         }
 
         payerTransitionsModel.PayerTransitionItem = item;
-        payerTransitionsModel.PayerTransitionResponse = ToResponse(item);
+        payerTransitionsModel.PayerTransitionResponse = _mapper.ToResponse(item);
         payerTransitionsModel.IsNotValid = false;
         payerTransitionsModel.Message = "PayerTransition retrieved successfully.";
         return payerTransitionsModel;
@@ -62,12 +67,12 @@ public class PayerTransitionBL : IPayerTransitionBL
             return payerTransitionsModel;
         }
 
-        var updatedItem = ToItem(payerTransitionsModel.PayerTransitionRequest);
+        var updatedItem = _mapper.ToItem(payerTransitionsModel.PayerTransitionRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _payerTransitionRepository.Update(updatedItem);
         payerTransitionsModel.PayerTransitionItem = savedItem!;
-        payerTransitionsModel.PayerTransitionResponse = ToResponse(savedItem!);
+        payerTransitionsModel.PayerTransitionResponse = _mapper.ToResponse(savedItem!);
         payerTransitionsModel.IsNotValid = false;
         payerTransitionsModel.Message = "PayerTransition updated successfully.";
         return payerTransitionsModel;
@@ -88,28 +93,60 @@ public class PayerTransitionBL : IPayerTransitionBL
         return payerTransitionsModel;
     }
 
-    private static PayerTransitionItem ToItem(PayerTransitionRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        PatientId = request.PatientId,
-        MemberId = request.MemberId,
-        StartDate = request.StartDate,
-        EndDate = request.EndDate,
-        PayerId = request.PayerId,
-        SecondaryPayerId = request.SecondaryPayerId,
-        PlanOwnership = request.PlanOwnership,
-        OwnerName = request.OwnerName
-    };
+        var result = new ImportResult();
+        var batch = new List<PayerTransitionItem>();
 
-    private static PayerTransitionResponse ToResponse(PayerTransitionItem item) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_mapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<PayerTransitionItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        PatientId = item.PatientId,
-        MemberId = item.MemberId,
-        StartDate = item.StartDate,
-        EndDate = item.EndDate,
-        PayerId = item.PayerId,
-        SecondaryPayerId = item.SecondaryPayerId,
-        PlanOwnership = item.PlanOwnership,
-        OwnerName = item.OwnerName
-    };
+        try
+        {
+            await _payerTransitionRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
 }

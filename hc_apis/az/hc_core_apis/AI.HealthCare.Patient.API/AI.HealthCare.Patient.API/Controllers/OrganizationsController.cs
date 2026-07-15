@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.Organization;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class OrganizationsController : ControllerBase
 {
     private readonly IOrganizationBL _organizationBL;
     private readonly IOrganizationValidationService _organizationValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public OrganizationsController(IOrganizationBL organizationBL, IOrganizationValidationService organizationValidationService)
+    public OrganizationsController(IOrganizationBL organizationBL, IOrganizationValidationService organizationValidationService, ICsvFileValidator csvFileValidator)
     {
         _organizationBL = organizationBL;
         _organizationValidationService = organizationValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new organization.</summary>
@@ -82,6 +86,19 @@ public class OrganizationsController : ControllerBase
             return NotFound(organizationsModel.Message);
 
         return Ok(organizationsModel.OrganizationResponse);
+    }
+
+    /// <summary>Bulk imports organizations from a CSV file (Synthea organizations.csv format).</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _organizationBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes an organization by Id.</summary>

@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.Payer;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class PayersController : ControllerBase
 {
     private readonly IPayerBL _payerBL;
     private readonly IPayerValidationService _payerValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public PayersController(IPayerBL payerBL, IPayerValidationService payerValidationService)
+    public PayersController(IPayerBL payerBL, IPayerValidationService payerValidationService, ICsvFileValidator csvFileValidator)
     {
         _payerBL = payerBL;
         _payerValidationService = payerValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new payer.</summary>
@@ -82,6 +86,19 @@ public class PayersController : ControllerBase
             return NotFound(payersModel.Message);
 
         return Ok(payersModel.PayerResponse);
+    }
+
+    /// <summary>Bulk imports payers from a CSV file (Synthea payers.csv format).</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _payerBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes a payer by Id.</summary>

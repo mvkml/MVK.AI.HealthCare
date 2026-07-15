@@ -35,6 +35,14 @@ public class OrganizationRepository : IOrganizationRepository
         return _mapper.ToModel(entity);
     }
 
+    public async Task CreateBatch(List<OrganizationItem> organizationItems)
+    {
+        var entities = organizationItems.Select(_mapper.ToEntity);
+        _context.Organizations.AddRange(entities);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<OrganizationItem?> Update(OrganizationItem organizationItem)
     {
         var entity = await _context.Organizations.FirstOrDefaultAsync(o => o.Id == organizationItem.Id);

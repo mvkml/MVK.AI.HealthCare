@@ -1,4 +1,5 @@
 using AI.HealthCare.Patient.Models.Claim;
+using AI.HealthCare.Patient.Models.Shared;
 
 namespace AI.HealthCare.Patient.BL;
 
@@ -10,4 +11,5 @@ public interface IClaimBL
     Task<ClaimsModel> GetByPatientId(Guid patientId);
     Task<ClaimsModel> Update(ClaimsModel claimsModel);
     Task<ClaimsModel> Delete(ClaimsModel claimsModel);
+    Task<ImportResult> Import(Stream csvStream);
 }

@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.PayerTransition;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class PayerTransitionsController : ControllerBase
 {
     private readonly IPayerTransitionBL _payerTransitionBL;
     private readonly IPayerTransitionValidationService _payerTransitionValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public PayerTransitionsController(IPayerTransitionBL payerTransitionBL, IPayerTransitionValidationService payerTransitionValidationService)
+    public PayerTransitionsController(IPayerTransitionBL payerTransitionBL, IPayerTransitionValidationService payerTransitionValidationService, ICsvFileValidator csvFileValidator)
     {
         _payerTransitionBL = payerTransitionBL;
         _payerTransitionValidationService = payerTransitionValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new payer transition.</summary>
@@ -82,6 +86,19 @@ public class PayerTransitionsController : ControllerBase
             return NotFound(payerTransitionsModel.Message);
 
         return Ok(payerTransitionsModel.PayerTransitionResponse);
+    }
+
+    /// <summary>Bulk imports payer transitions from a CSV file (Synthea payer_transitions.csv format). Matching Patient and Payer records must already exist.</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _payerTransitionBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes a payer transition by Id.</summary>

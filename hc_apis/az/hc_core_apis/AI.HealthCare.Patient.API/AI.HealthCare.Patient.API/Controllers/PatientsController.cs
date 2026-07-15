@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.Patient;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class PatientsController : ControllerBase
 {
     private readonly IPatientBL _patientBL;
     private readonly IPatientValidationService _patientValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public PatientsController(IPatientBL patientBL, IPatientValidationService patientValidationService)
+    public PatientsController(IPatientBL patientBL, IPatientValidationService patientValidationService, ICsvFileValidator csvFileValidator)
     {
         _patientBL = patientBL;
         _patientValidationService = patientValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new patient. Set includePii=true to receive masked Ssn/Drivers/Passport in the response (demo/learning purposes only).</summary>
@@ -83,6 +87,19 @@ public class PatientsController : ControllerBase
             return NotFound(patientsModel.Message);
 
         return Ok(patientsModel.PatientResponse);
+    }
+
+    /// <summary>Bulk imports patients from a CSV file (Synthea patients.csv format). The Id column is preserved as-is so other entities' FK references resolve correctly.</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _patientBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes a patient by Id.</summary>

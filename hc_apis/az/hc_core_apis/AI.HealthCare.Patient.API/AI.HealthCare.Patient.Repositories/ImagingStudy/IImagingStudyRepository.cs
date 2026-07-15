@@ -8,6 +8,7 @@ public interface IImagingStudyRepository
     Task<List<ImagingStudyItem>> GetAll();
     Task<List<ImagingStudyItem>> GetByPatientId(Guid patientId);
     Task<ImagingStudyItem> Create(ImagingStudyItem imagingStudyItem);
+    Task CreateBatch(List<ImagingStudyItem> imagingStudyItems);
     Task<ImagingStudyItem?> Update(ImagingStudyItem imagingStudyItem);
     Task<bool> Delete(Guid id);
 }

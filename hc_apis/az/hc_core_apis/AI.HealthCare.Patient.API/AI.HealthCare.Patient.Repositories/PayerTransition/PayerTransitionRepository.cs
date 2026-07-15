@@ -35,6 +35,14 @@ public class PayerTransitionRepository : IPayerTransitionRepository
         return _mapper.ToModel(entity);
     }
 
+    public async Task CreateBatch(List<PayerTransitionItem> payerTransitionItems)
+    {
+        var entities = payerTransitionItems.Select(_mapper.ToEntity);
+        _context.PayerTransitions.AddRange(entities);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<PayerTransitionItem?> Update(PayerTransitionItem payerTransitionItem)
     {
         var entity = await _context.PayerTransitions.FirstOrDefaultAsync(pt => pt.Id == payerTransitionItem.Id);

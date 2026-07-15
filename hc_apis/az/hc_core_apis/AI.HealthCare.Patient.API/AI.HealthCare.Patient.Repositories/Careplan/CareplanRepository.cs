@@ -41,6 +41,14 @@ public class CareplanRepository : ICareplanRepository
         return _mapper.ToModel(entity);
     }
 
+    public async Task CreateBatch(List<CareplanItem> careplanItems)
+    {
+        var entities = careplanItems.Select(_mapper.ToEntity);
+        _context.Careplans.AddRange(entities);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<CareplanItem?> Update(CareplanItem careplanItem)
     {
         var entity = await _context.Careplans.FirstOrDefaultAsync(c => c.Id == careplanItem.Id);

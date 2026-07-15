@@ -1,26 +1,31 @@
 using AI.HealthCare.Patient.Models.Organization;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class OrganizationBL : IOrganizationBL
 {
-    private readonly IOrganizationRepository _organizationRepository;
+    private const int ImportBatchSize = 500;
 
-    public OrganizationBL(IOrganizationRepository organizationRepository)
+    private readonly IOrganizationRepository _organizationRepository;
+    private readonly IOrganizationBLMapper _mapper;
+
+    public OrganizationBL(IOrganizationRepository organizationRepository, IOrganizationBLMapper mapper)
     {
         _organizationRepository = organizationRepository;
+        _mapper = mapper;
     }
 
     public async Task<OrganizationsModel> Create(OrganizationsModel organizationsModel)
     {
-        organizationsModel.OrganizationItem = ToItem(organizationsModel.OrganizationRequest);
+        organizationsModel.OrganizationItem = _mapper.ToItem(organizationsModel.OrganizationRequest);
         organizationsModel.OrganizationItem.Id = Guid.NewGuid();
 
         var savedItem = await _organizationRepository.Create(organizationsModel.OrganizationItem);
         organizationsModel.OrganizationItem = savedItem;
 
-        organizationsModel.OrganizationResponse = ToResponse(savedItem);
+        organizationsModel.OrganizationResponse = _mapper.ToResponse(savedItem);
         organizationsModel.IsNotValid = false;
         organizationsModel.Message = "Organization created successfully.";
 
@@ -38,7 +43,7 @@ public class OrganizationBL : IOrganizationBL
         }
 
         organizationsModel.OrganizationItem = item;
-        organizationsModel.OrganizationResponse = ToResponse(item);
+        organizationsModel.OrganizationResponse = _mapper.ToResponse(item);
         organizationsModel.IsNotValid = false;
         organizationsModel.Message = "Organization retrieved successfully.";
         return organizationsModel;
@@ -63,12 +68,12 @@ public class OrganizationBL : IOrganizationBL
             return organizationsModel;
         }
 
-        var updatedItem = ToItem(organizationsModel.OrganizationRequest);
+        var updatedItem = _mapper.ToItem(organizationsModel.OrganizationRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _organizationRepository.Update(updatedItem);
         organizationsModel.OrganizationItem = savedItem!;
-        organizationsModel.OrganizationResponse = ToResponse(savedItem!);
+        organizationsModel.OrganizationResponse = _mapper.ToResponse(savedItem!);
         organizationsModel.IsNotValid = false;
         organizationsModel.Message = "Organization updated successfully.";
         return organizationsModel;
@@ -89,32 +94,60 @@ public class OrganizationBL : IOrganizationBL
         return organizationsModel;
     }
 
-    private static OrganizationItem ToItem(OrganizationRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        Name = request.Name,
-        Address = request.Address,
-        City = request.City,
-        State = request.State,
-        Zip = request.Zip,
-        Phone = request.Phone,
-        Lat = request.Lat,
-        Lon = request.Lon,
-        Revenue = request.Revenue,
-        Utilization = request.Utilization
-    };
+        var result = new ImportResult();
+        var batch = new List<OrganizationItem>();
 
-    private static OrganizationResponse ToResponse(OrganizationItem item) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_mapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<OrganizationItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        Name = item.Name,
-        Address = item.Address,
-        City = item.City,
-        State = item.State,
-        Zip = item.Zip,
-        Phone = item.Phone,
-        Lat = item.Lat,
-        Lon = item.Lon,
-        Revenue = item.Revenue,
-        Utilization = item.Utilization
-    };
+        try
+        {
+            await _organizationRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
 }

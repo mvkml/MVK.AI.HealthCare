@@ -35,6 +35,14 @@ public class ProviderRepository : IProviderRepository
         return _mapper.ToModel(entity);
     }
 
+    public async Task CreateBatch(List<ProviderItem> providerItems)
+    {
+        var entities = providerItems.Select(_mapper.ToEntity);
+        _context.Providers.AddRange(entities);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<ProviderItem?> Update(ProviderItem providerItem)
     {
         var entity = await _context.Providers.FirstOrDefaultAsync(p => p.Id == providerItem.Id);

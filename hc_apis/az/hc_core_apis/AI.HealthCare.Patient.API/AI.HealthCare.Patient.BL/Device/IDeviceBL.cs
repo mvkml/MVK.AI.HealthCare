@@ -1,4 +1,5 @@
 using AI.HealthCare.Patient.Models.Device;
+using AI.HealthCare.Patient.Models.Shared;
 
 namespace AI.HealthCare.Patient.BL;
 
@@ -10,4 +11,5 @@ public interface IDeviceBL
     Task<DevicesModel> GetByPatientId(Guid patientId);
     Task<DevicesModel> Update(DevicesModel devicesModel);
     Task<DevicesModel> Delete(DevicesModel devicesModel);
+    Task<ImportResult> Import(Stream csvStream);
 }

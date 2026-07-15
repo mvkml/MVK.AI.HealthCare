@@ -41,6 +41,14 @@ public class ConditionRepository : IConditionRepository
         return _mapper.ToModel(entity);
     }
 
+    public async Task CreateBatch(List<ConditionItem> conditionItems)
+    {
+        var entities = conditionItems.Select(_mapper.ToEntity);
+        _context.Conditions.AddRange(entities);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<ConditionItem?> Update(ConditionItem conditionItem)
     {
         var entity = await _context.Conditions.FirstOrDefaultAsync(c => c.Id == conditionItem.Id);

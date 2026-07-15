@@ -1,26 +1,31 @@
 using AI.HealthCare.Patient.Models.Claim;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class ClaimBL : IClaimBL
 {
-    private readonly IClaimRepository _claimRepository;
+    private const int ImportBatchSize = 500;
 
-    public ClaimBL(IClaimRepository claimRepository)
+    private readonly IClaimRepository _claimRepository;
+    private readonly IClaimBLMapper _mapper;
+
+    public ClaimBL(IClaimRepository claimRepository, IClaimBLMapper mapper)
     {
         _claimRepository = claimRepository;
+        _mapper = mapper;
     }
 
     public async Task<ClaimsModel> Create(ClaimsModel claimsModel)
     {
-        claimsModel.ClaimItem = ToItem(claimsModel.ClaimRequest);
+        claimsModel.ClaimItem = _mapper.ToItem(claimsModel.ClaimRequest);
         claimsModel.ClaimItem.Id = Guid.NewGuid();
 
         var savedItem = await _claimRepository.Create(claimsModel.ClaimItem);
         claimsModel.ClaimItem = savedItem;
 
-        claimsModel.ClaimResponse = ToResponse(savedItem);
+        claimsModel.ClaimResponse = _mapper.ToResponse(savedItem);
         claimsModel.IsNotValid = false;
         claimsModel.Message = "Claim created successfully.";
 
@@ -38,7 +43,7 @@ public class ClaimBL : IClaimBL
         }
 
         claimsModel.ClaimItem = item;
-        claimsModel.ClaimResponse = ToResponse(item);
+        claimsModel.ClaimResponse = _mapper.ToResponse(item);
         claimsModel.IsNotValid = false;
         claimsModel.Message = "Claim retrieved successfully.";
         return claimsModel;
@@ -74,12 +79,12 @@ public class ClaimBL : IClaimBL
             return claimsModel;
         }
 
-        var updatedItem = ToItem(claimsModel.ClaimRequest);
+        var updatedItem = _mapper.ToItem(claimsModel.ClaimRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _claimRepository.Update(updatedItem);
         claimsModel.ClaimItem = savedItem!;
-        claimsModel.ClaimResponse = ToResponse(savedItem!);
+        claimsModel.ClaimResponse = _mapper.ToResponse(savedItem!);
         claimsModel.IsNotValid = false;
         claimsModel.Message = "Claim updated successfully.";
         return claimsModel;
@@ -100,72 +105,60 @@ public class ClaimBL : IClaimBL
         return claimsModel;
     }
 
-    private static ClaimItem ToItem(ClaimRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        PatientId = request.PatientId,
-        ProviderId = request.ProviderId,
-        PrimaryPatientInsuranceId = request.PrimaryPatientInsuranceId,
-        SecondaryPatientInsuranceId = request.SecondaryPatientInsuranceId,
-        DepartmentId = request.DepartmentId,
-        PatientDepartmentId = request.PatientDepartmentId,
-        Diagnosis1 = request.Diagnosis1,
-        Diagnosis2 = request.Diagnosis2,
-        Diagnosis3 = request.Diagnosis3,
-        Diagnosis4 = request.Diagnosis4,
-        Diagnosis5 = request.Diagnosis5,
-        Diagnosis6 = request.Diagnosis6,
-        Diagnosis7 = request.Diagnosis7,
-        Diagnosis8 = request.Diagnosis8,
-        ReferringProviderId = request.ReferringProviderId,
-        SupervisingProviderId = request.SupervisingProviderId,
-        AppointmentId = request.AppointmentId,
-        CurrentIllnessDate = request.CurrentIllnessDate,
-        ServiceDate = request.ServiceDate,
-        Status1 = request.Status1,
-        Status2 = request.Status2,
-        StatusP = request.StatusP,
-        Outstanding1 = request.Outstanding1,
-        Outstanding2 = request.Outstanding2,
-        OutstandingP = request.OutstandingP,
-        LastBilledDate1 = request.LastBilledDate1,
-        LastBilledDate2 = request.LastBilledDate2,
-        LastBilledDateP = request.LastBilledDateP,
-        HealthcareClaimTypeId1 = request.HealthcareClaimTypeId1,
-        HealthcareClaimTypeId2 = request.HealthcareClaimTypeId2
-    };
+        var result = new ImportResult();
+        var batch = new List<ClaimItem>();
 
-    private static ClaimResponse ToResponse(ClaimItem item) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_mapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<ClaimItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        PatientId = item.PatientId,
-        ProviderId = item.ProviderId,
-        PrimaryPatientInsuranceId = item.PrimaryPatientInsuranceId,
-        SecondaryPatientInsuranceId = item.SecondaryPatientInsuranceId,
-        DepartmentId = item.DepartmentId,
-        PatientDepartmentId = item.PatientDepartmentId,
-        Diagnosis1 = item.Diagnosis1,
-        Diagnosis2 = item.Diagnosis2,
-        Diagnosis3 = item.Diagnosis3,
-        Diagnosis4 = item.Diagnosis4,
-        Diagnosis5 = item.Diagnosis5,
-        Diagnosis6 = item.Diagnosis6,
-        Diagnosis7 = item.Diagnosis7,
-        Diagnosis8 = item.Diagnosis8,
-        ReferringProviderId = item.ReferringProviderId,
-        SupervisingProviderId = item.SupervisingProviderId,
-        AppointmentId = item.AppointmentId,
-        CurrentIllnessDate = item.CurrentIllnessDate,
-        ServiceDate = item.ServiceDate,
-        Status1 = item.Status1,
-        Status2 = item.Status2,
-        StatusP = item.StatusP,
-        Outstanding1 = item.Outstanding1,
-        Outstanding2 = item.Outstanding2,
-        OutstandingP = item.OutstandingP,
-        LastBilledDate1 = item.LastBilledDate1,
-        LastBilledDate2 = item.LastBilledDate2,
-        LastBilledDateP = item.LastBilledDateP,
-        HealthcareClaimTypeId1 = item.HealthcareClaimTypeId1,
-        HealthcareClaimTypeId2 = item.HealthcareClaimTypeId2
-    };
+        try
+        {
+            await _claimRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
 }

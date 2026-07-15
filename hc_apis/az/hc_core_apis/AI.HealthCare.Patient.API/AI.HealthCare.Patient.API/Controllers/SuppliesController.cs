@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.Supply;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class SuppliesController : ControllerBase
 {
     private readonly ISupplyBL _supplyBL;
     private readonly ISupplyValidationService _supplyValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public SuppliesController(ISupplyBL supplyBL, ISupplyValidationService supplyValidationService)
+    public SuppliesController(ISupplyBL supplyBL, ISupplyValidationService supplyValidationService, ICsvFileValidator csvFileValidator)
     {
         _supplyBL = supplyBL;
         _supplyValidationService = supplyValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new supply.</summary>
@@ -90,6 +94,19 @@ public class SuppliesController : ControllerBase
             return NotFound(suppliesModel.Message);
 
         return Ok(suppliesModel.SupplyResponse);
+    }
+
+    /// <summary>Bulk imports supplies from a CSV file (Synthea supplies.csv format). Matching Patient and Encounter records must already exist.</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _supplyBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes a supply by Id.</summary>

@@ -1,25 +1,30 @@
 using AI.HealthCare.Patient.Models.Immunization;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class ImmunizationBL : IImmunizationBL
 {
-    private readonly IImmunizationRepository _immunizationRepository;
+    private const int ImportBatchSize = 500;
 
-    public ImmunizationBL(IImmunizationRepository immunizationRepository)
+    private readonly IImmunizationRepository _immunizationRepository;
+    private readonly IImmunizationBLMapper _mapper;
+
+    public ImmunizationBL(IImmunizationRepository immunizationRepository, IImmunizationBLMapper mapper)
     {
         _immunizationRepository = immunizationRepository;
+        _mapper = mapper;
     }
 
     public async Task<ImmunizationsModel> Create(ImmunizationsModel immunizationsModel)
     {
-        immunizationsModel.ImmunizationItem = ToItem(immunizationsModel.ImmunizationRequest);
+        immunizationsModel.ImmunizationItem = _mapper.ToItem(immunizationsModel.ImmunizationRequest);
 
         var savedItem = await _immunizationRepository.Create(immunizationsModel.ImmunizationItem);
         immunizationsModel.ImmunizationItem = savedItem;
 
-        immunizationsModel.ImmunizationResponse = ToResponse(savedItem);
+        immunizationsModel.ImmunizationResponse = _mapper.ToResponse(savedItem);
         immunizationsModel.IsNotValid = false;
         immunizationsModel.Message = "Immunization created successfully.";
 
@@ -37,7 +42,7 @@ public class ImmunizationBL : IImmunizationBL
         }
 
         immunizationsModel.ImmunizationItem = item;
-        immunizationsModel.ImmunizationResponse = ToResponse(item);
+        immunizationsModel.ImmunizationResponse = _mapper.ToResponse(item);
         immunizationsModel.IsNotValid = false;
         immunizationsModel.Message = "Immunization retrieved successfully.";
         return immunizationsModel;
@@ -73,12 +78,12 @@ public class ImmunizationBL : IImmunizationBL
             return immunizationsModel;
         }
 
-        var updatedItem = ToItem(immunizationsModel.ImmunizationRequest);
+        var updatedItem = _mapper.ToItem(immunizationsModel.ImmunizationRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _immunizationRepository.Update(updatedItem);
         immunizationsModel.ImmunizationItem = savedItem!;
-        immunizationsModel.ImmunizationResponse = ToResponse(savedItem!);
+        immunizationsModel.ImmunizationResponse = _mapper.ToResponse(savedItem!);
         immunizationsModel.IsNotValid = false;
         immunizationsModel.Message = "Immunization updated successfully.";
         return immunizationsModel;
@@ -99,24 +104,60 @@ public class ImmunizationBL : IImmunizationBL
         return immunizationsModel;
     }
 
-    private static ImmunizationItem ToItem(ImmunizationRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        Date = request.Date,
-        PatientId = request.PatientId,
-        EncounterId = request.EncounterId,
-        Code = request.Code,
-        Description = request.Description,
-        BaseCost = request.BaseCost
-    };
+        var result = new ImportResult();
+        var batch = new List<ImmunizationItem>();
 
-    private static ImmunizationResponse ToResponse(ImmunizationItem item) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_mapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<ImmunizationItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        Date = item.Date,
-        PatientId = item.PatientId,
-        EncounterId = item.EncounterId,
-        Code = item.Code,
-        Description = item.Description,
-        BaseCost = item.BaseCost
-    };
+        try
+        {
+            await _immunizationRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
 }

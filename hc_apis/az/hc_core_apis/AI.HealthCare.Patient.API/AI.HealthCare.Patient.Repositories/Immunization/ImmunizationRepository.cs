@@ -41,6 +41,14 @@ public class ImmunizationRepository : IImmunizationRepository
         return _mapper.ToModel(entity);
     }
 
+    public async Task CreateBatch(List<ImmunizationItem> immunizationItems)
+    {
+        var entities = immunizationItems.Select(_mapper.ToEntity);
+        _context.Immunizations.AddRange(entities);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<ImmunizationItem?> Update(ImmunizationItem immunizationItem)
     {
         var entity = await _context.Immunizations.FirstOrDefaultAsync(i => i.Id == immunizationItem.Id);

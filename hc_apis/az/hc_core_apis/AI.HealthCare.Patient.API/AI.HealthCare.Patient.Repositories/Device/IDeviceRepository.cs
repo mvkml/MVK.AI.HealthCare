@@ -8,6 +8,7 @@ public interface IDeviceRepository
     Task<List<DeviceItem>> GetAll();
     Task<List<DeviceItem>> GetByPatientId(Guid patientId);
     Task<DeviceItem> Create(DeviceItem deviceItem);
+    Task CreateBatch(List<DeviceItem> deviceItems);
     Task<DeviceItem?> Update(DeviceItem deviceItem);
     Task<bool> Delete(long id);
 }

@@ -8,6 +8,7 @@ public interface IConditionRepository
     Task<List<ConditionItem>> GetAll();
     Task<List<ConditionItem>> GetByPatientId(Guid patientId);
     Task<ConditionItem> Create(ConditionItem conditionItem);
+    Task CreateBatch(List<ConditionItem> conditionItems);
     Task<ConditionItem?> Update(ConditionItem conditionItem);
     Task<bool> Delete(long id);
 }

@@ -1,25 +1,30 @@
 using AI.HealthCare.Patient.Models.Medication;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class MedicationBL : IMedicationBL
 {
-    private readonly IMedicationRepository _medicationRepository;
+    private const int ImportBatchSize = 500;
 
-    public MedicationBL(IMedicationRepository medicationRepository)
+    private readonly IMedicationRepository _medicationRepository;
+    private readonly IMedicationBLMapper _mapper;
+
+    public MedicationBL(IMedicationRepository medicationRepository, IMedicationBLMapper mapper)
     {
         _medicationRepository = medicationRepository;
+        _mapper = mapper;
     }
 
     public async Task<MedicationsModel> Create(MedicationsModel medicationsModel)
     {
-        medicationsModel.MedicationItem = ToItem(medicationsModel.MedicationRequest);
+        medicationsModel.MedicationItem = _mapper.ToItem(medicationsModel.MedicationRequest);
 
         var savedItem = await _medicationRepository.Create(medicationsModel.MedicationItem);
         medicationsModel.MedicationItem = savedItem;
 
-        medicationsModel.MedicationResponse = ToResponse(savedItem);
+        medicationsModel.MedicationResponse = _mapper.ToResponse(savedItem);
         medicationsModel.IsNotValid = false;
         medicationsModel.Message = "Medication created successfully.";
 
@@ -37,7 +42,7 @@ public class MedicationBL : IMedicationBL
         }
 
         medicationsModel.MedicationItem = item;
-        medicationsModel.MedicationResponse = ToResponse(item);
+        medicationsModel.MedicationResponse = _mapper.ToResponse(item);
         medicationsModel.IsNotValid = false;
         medicationsModel.Message = "Medication retrieved successfully.";
         return medicationsModel;
@@ -73,12 +78,12 @@ public class MedicationBL : IMedicationBL
             return medicationsModel;
         }
 
-        var updatedItem = ToItem(medicationsModel.MedicationRequest);
+        var updatedItem = _mapper.ToItem(medicationsModel.MedicationRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _medicationRepository.Update(updatedItem);
         medicationsModel.MedicationItem = savedItem!;
-        medicationsModel.MedicationResponse = ToResponse(savedItem!);
+        medicationsModel.MedicationResponse = _mapper.ToResponse(savedItem!);
         medicationsModel.IsNotValid = false;
         medicationsModel.Message = "Medication updated successfully.";
         return medicationsModel;
@@ -99,38 +104,60 @@ public class MedicationBL : IMedicationBL
         return medicationsModel;
     }
 
-    private static MedicationItem ToItem(MedicationRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        Start = request.Start,
-        Stop = request.Stop,
-        PatientId = request.PatientId,
-        PayerId = request.PayerId,
-        EncounterId = request.EncounterId,
-        Code = request.Code,
-        Description = request.Description,
-        BaseCost = request.BaseCost,
-        PayerCoverage = request.PayerCoverage,
-        TotalCost = request.TotalCost,
-        Dispenses = request.Dispenses,
-        ReasonCode = request.ReasonCode,
-        ReasonDescription = request.ReasonDescription
-    };
+        var result = new ImportResult();
+        var batch = new List<MedicationItem>();
 
-    private static MedicationResponse ToResponse(MedicationItem item) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_mapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<MedicationItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        Start = item.Start,
-        Stop = item.Stop,
-        PatientId = item.PatientId,
-        PayerId = item.PayerId,
-        EncounterId = item.EncounterId,
-        Code = item.Code,
-        Description = item.Description,
-        BaseCost = item.BaseCost,
-        PayerCoverage = item.PayerCoverage,
-        TotalCost = item.TotalCost,
-        Dispenses = item.Dispenses,
-        ReasonCode = item.ReasonCode,
-        ReasonDescription = item.ReasonDescription
-    };
+        try
+        {
+            await _medicationRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
 }

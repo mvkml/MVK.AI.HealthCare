@@ -35,6 +35,14 @@ public class PayerRepository : IPayerRepository
         return _mapper.ToModel(entity);
     }
 
+    public async Task CreateBatch(List<PayerItem> payerItems)
+    {
+        var entities = payerItems.Select(_mapper.ToEntity);
+        _context.Payers.AddRange(entities);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<PayerItem?> Update(PayerItem payerItem)
     {
         var entity = await _context.Payers.FirstOrDefaultAsync(p => p.Id == payerItem.Id);

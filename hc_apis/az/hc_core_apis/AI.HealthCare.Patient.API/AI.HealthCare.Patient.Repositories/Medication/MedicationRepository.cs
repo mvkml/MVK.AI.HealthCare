@@ -41,6 +41,14 @@ public class MedicationRepository : IMedicationRepository
         return _mapper.ToModel(entity);
     }
 
+    public async Task CreateBatch(List<MedicationItem> medicationItems)
+    {
+        var entities = medicationItems.Select(_mapper.ToEntity);
+        _context.Medications.AddRange(entities);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<MedicationItem?> Update(MedicationItem medicationItem)
     {
         var entity = await _context.Medications.FirstOrDefaultAsync(m => m.Id == medicationItem.Id);

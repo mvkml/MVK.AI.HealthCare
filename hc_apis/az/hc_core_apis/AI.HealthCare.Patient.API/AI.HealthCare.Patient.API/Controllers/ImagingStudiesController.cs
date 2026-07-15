@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.ImagingStudy;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class ImagingStudiesController : ControllerBase
 {
     private readonly IImagingStudyBL _imagingStudyBL;
     private readonly IImagingStudyValidationService _imagingStudyValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public ImagingStudiesController(IImagingStudyBL imagingStudyBL, IImagingStudyValidationService imagingStudyValidationService)
+    public ImagingStudiesController(IImagingStudyBL imagingStudyBL, IImagingStudyValidationService imagingStudyValidationService, ICsvFileValidator csvFileValidator)
     {
         _imagingStudyBL = imagingStudyBL;
         _imagingStudyValidationService = imagingStudyValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new imaging study.</summary>
@@ -90,6 +94,19 @@ public class ImagingStudiesController : ControllerBase
             return NotFound(imagingStudiesModel.Message);
 
         return Ok(imagingStudiesModel.ImagingStudyResponse);
+    }
+
+    /// <summary>Bulk imports imaging studies from a CSV file (Synthea imaging_studies.csv format). Matching Patient and Encounter records must already exist.</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _imagingStudyBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes an imaging study by Id.</summary>

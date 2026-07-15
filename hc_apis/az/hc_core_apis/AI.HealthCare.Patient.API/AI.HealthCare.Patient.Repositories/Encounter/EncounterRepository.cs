@@ -41,6 +41,14 @@ public class EncounterRepository : IEncounterRepository
         return _mapper.ToModel(entity);
     }
 
+    public async Task CreateBatch(List<EncounterItem> encounterItems)
+    {
+        var entities = encounterItems.Select(_mapper.ToEntity);
+        _context.Encounters.AddRange(entities);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<EncounterItem?> Update(EncounterItem encounterItem)
     {
         var entity = await _context.Encounters.FirstOrDefaultAsync(e => e.Id == encounterItem.Id);

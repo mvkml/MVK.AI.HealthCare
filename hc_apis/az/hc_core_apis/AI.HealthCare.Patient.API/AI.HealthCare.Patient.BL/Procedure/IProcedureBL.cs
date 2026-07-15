@@ -1,4 +1,5 @@
 using AI.HealthCare.Patient.Models.Procedure;
+using AI.HealthCare.Patient.Models.Shared;
 
 namespace AI.HealthCare.Patient.BL;
 
@@ -10,4 +11,5 @@ public interface IProcedureBL
     Task<ProceduresModel> GetByPatientId(Guid patientId);
     Task<ProceduresModel> Update(ProceduresModel proceduresModel);
     Task<ProceduresModel> Delete(ProceduresModel proceduresModel);
+    Task<ImportResult> Import(Stream csvStream);
 }
