@@ -4,6 +4,7 @@ using df_chunk_file.Models;
 using df_chunk_file.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.DurableTask;
 using Microsoft.DurableTask.Client;
 using Microsoft.Extensions.Logging;
@@ -27,6 +28,25 @@ public class BulkImportOrchestration
     /// <summary>Client entry point. Accepts { filePath, moduleType, apiEndpoint }, starts the orchestration,
     /// and returns immediately with a status-check URL (does not wait for the import to finish).</summary>
     [Function(nameof(StartBulkImport))]
+    [OpenApiOperation(operationId: nameof(StartBulkImport), tags: ["BulkImport"],
+        Summary = "Start a chunked bulk CSV import",
+        Description = "Reads a large CSV from a local file path, splits it into chunks, and uploads each " +
+                      "chunk to the given ASP.NET Core API endpoint. Returns immediately with a status-check " +
+                      "URL rather than waiting for the import to finish.")]
+    [OpenApiRequestBody(contentType: "application/json", bodyType: typeof(BulkImportRequest),
+        Description = "documentNumber: caller-supplied job reference. filePath: local path to the CSV. " +
+                      "moduleType: entity name, used for labeling results. apiEndpoint: the target " +
+                      "POST .../import/upsert URL.",
+        Required = true)]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.Accepted, contentType: "application/json",
+        bodyType: typeof(object),
+        Summary = "Orchestration started",
+        Description = "Returns instance management URLs, including statusQueryGetUri to poll for progress " +
+                      "and the final BulkImportSummary.")]
+    [OpenApiResponseWithBody(statusCode: HttpStatusCode.BadRequest, contentType: "text/plain",
+        bodyType: typeof(string),
+        Summary = "Missing required fields",
+        Description = "filePath or apiEndpoint was missing from the request body.")]
     public async Task<HttpResponseData> StartBulkImport(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequestData req,
         [DurableClient] DurableTaskClient client,
