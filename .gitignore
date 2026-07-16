@@ -16,6 +16,9 @@ graphify-out/cache/
 .DS_Store
 Thumbs.db
 
+# Local Claude Code settings (per-machine, not shared project config)
+.claude/settings.json
+
 # Jupyter autosave checkpoints (regenerable, not source)
 .ipynb_checkpoints/
 
