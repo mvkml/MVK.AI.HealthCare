@@ -1,0 +1,37 @@
+{
+  "name": "playwright_api",
+  "version": "1.0.0",
+  "description": "Playwright API tests for AI.HealthCare.Patient.API",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report",
+    "demo:patient-upsert": "tsx demo/patient-api/upsert-demo.ts",
+    "demo:organization-upsert": "tsx demo/organization-api/upsert-demo.ts",
+    "demo:payer-upsert": "tsx demo/payer-api/upsert-demo.ts",
+    "demo:provider-upsert": "tsx demo/provider-api/upsert-demo.ts",
+    "demo:payer-transition-upsert": "tsx demo/payer-transition-api/upsert-demo.ts",
+    "demo:encounter-upsert": "tsx demo/encounter-api/upsert-demo.ts",
+    "demo:condition-upsert": "tsx demo/condition-api/upsert-demo.ts",
+    "demo:allergy-upsert": "tsx demo/allergy-api/upsert-demo.ts",
+    "demo:careplan-upsert": "tsx demo/careplan-api/upsert-demo.ts",
+    "demo:immunization-upsert": "tsx demo/immunization-api/upsert-demo.ts",
+    "demo:procedure-upsert": "tsx demo/procedure-api/upsert-demo.ts",
+    "demo:device-upsert": "tsx demo/device-api/upsert-demo.ts",
+    "demo:supply-upsert": "tsx demo/supply-api/upsert-demo.ts",
+    "demo:imaging-study-upsert": "tsx demo/imaging-study-api/upsert-demo.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
+  }
+}
