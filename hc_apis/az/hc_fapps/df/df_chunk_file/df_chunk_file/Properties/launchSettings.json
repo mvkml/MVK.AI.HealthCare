@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "df_chunk_file": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7131",
+      "launchBrowser": false
+    }
+  }
+}

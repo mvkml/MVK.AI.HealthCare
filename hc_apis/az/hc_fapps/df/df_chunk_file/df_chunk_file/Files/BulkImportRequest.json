@@ -1,0 +1,6 @@
+{
+  "documentNumber": "DOC-2026-07-16-OBS-001",
+  "filePath": "C:\\git\\health\\hc_apis\\az\\hc_core_apis\\AI.HealthCare.Patient.API\\documents\\patient_details\\synthea\\observations.csv",
+  "moduleType": "Observation",
+  "apiEndpoint": "http://localhost:5295/api/observations/import/upsert"
+}
