@@ -4,6 +4,7 @@ using AI.HealthCare.Patient.EF.DBContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AI.HealthCare.Patient.EF.Migrations
 {
     [DbContext(typeof(PatientDbContext))]
-    partial class PatientDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260716140445_MakeClaimTransactionAmountNullable")]
+    partial class MakeClaimTransactionAmountNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -297,8 +300,8 @@ namespace AI.HealthCare.Patient.EF.Migrations
                     b.Property<int?>("DiagnosisRef4")
                         .HasColumnType("int");
 
-                    b.Property<int?>("FeeScheduleId")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("FeeScheduleId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("FromDate")
                         .HasColumnType("datetime2");
@@ -320,8 +323,8 @@ namespace AI.HealthCare.Patient.EF.Migrations
                         .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("Notes")
-                        .HasMaxLength(400)
-                        .HasColumnType("nvarchar(400)");
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.Property<decimal?>("Outstanding")
                         .HasColumnType("decimal(12,2)");
@@ -329,8 +332,8 @@ namespace AI.HealthCare.Patient.EF.Migrations
                     b.Property<Guid>("PatientId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("PatientInsuranceId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int?>("PatientInsuranceId")
+                        .HasColumnType("int");
 
                     b.Property<decimal?>("Payments")
                         .HasColumnType("decimal(12,2)");

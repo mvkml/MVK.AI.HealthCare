@@ -102,6 +102,7 @@ builder.Services.AddScoped<IImmunizationBLMapper, ImmunizationBLMapper>();
 builder.Services.AddScoped<IImmunizationValidationService, ImmunizationValidationService>();
 
 builder.Services.AddScoped<IObservationBL, ObservationBL>();
+builder.Services.AddScoped<IObservationBLMapper, ObservationBLMapper>();
 builder.Services.AddScoped<IObservationValidationService, ObservationValidationService>();
 
 builder.Services.AddScoped<IDeviceBL, DeviceBL>();
@@ -121,6 +122,7 @@ builder.Services.AddScoped<IClaimBLMapper, ClaimBLMapper>();
 builder.Services.AddScoped<IClaimValidationService, ClaimValidationService>();
 
 builder.Services.AddScoped<IClaimTransactionBL, ClaimTransactionBL>();
+builder.Services.AddScoped<IClaimTransactionBLMapper, ClaimTransactionBLMapper>();
 builder.Services.AddScoped<IClaimTransactionValidationService, ClaimTransactionValidationService>();
 
 var app = builder.Build();

@@ -1,0 +1,6 @@
+{
+  "documentNumber": "DOC-2026-07-16-CT-001",
+  "filePath": "C:/git/health/hc_apis/az/hc_core_apis/AI.HealthCare.Patient.API/documents/patient_details/synthea/claims_transactions.csv",
+  "moduleType": "ClaimTransaction",
+  "apiEndpoint": "http://localhost:5295/api/claimtransactions/import"
+}

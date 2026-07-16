@@ -41,6 +41,14 @@ public class ObservationRepository : IObservationRepository
         return _mapper.ToModel(entity);
     }
 
+    public async Task CreateBatch(List<ObservationItem> observationItems)
+    {
+        var entities = observationItems.Select(_mapper.ToEntity);
+        _context.Observations.AddRange(entities);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<ObservationItem?> Update(ObservationItem observationItem)
     {
         var entity = await _context.Observations.FirstOrDefaultAsync(o => o.Id == observationItem.Id);

@@ -15,13 +15,6 @@ public class ObservationValidationService : IObservationValidationService
             return observationsModel;
         }
 
-        if (request.EncounterId == Guid.Empty)
-        {
-            observationsModel.IsNotValid = true;
-            observationsModel.Message = "EncounterId is required.";
-            return observationsModel;
-        }
-
         if (request.Date == default)
         {
             observationsModel.IsNotValid = true;

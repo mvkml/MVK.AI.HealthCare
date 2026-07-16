@@ -1,26 +1,31 @@
 using AI.HealthCare.Patient.Models.ClaimTransaction;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class ClaimTransactionBL : IClaimTransactionBL
 {
-    private readonly IClaimTransactionRepository _claimTransactionRepository;
+    private const int ImportBatchSize = 500;
 
-    public ClaimTransactionBL(IClaimTransactionRepository claimTransactionRepository)
+    private readonly IClaimTransactionRepository _claimTransactionRepository;
+    private readonly IClaimTransactionBLMapper _mapper;
+
+    public ClaimTransactionBL(IClaimTransactionRepository claimTransactionRepository, IClaimTransactionBLMapper mapper)
     {
         _claimTransactionRepository = claimTransactionRepository;
+        _mapper = mapper;
     }
 
     public async Task<ClaimTransactionsModel> Create(ClaimTransactionsModel claimTransactionsModel)
     {
-        claimTransactionsModel.ClaimTransactionItem = ToItem(claimTransactionsModel.ClaimTransactionRequest);
+        claimTransactionsModel.ClaimTransactionItem = _mapper.ToItem(claimTransactionsModel.ClaimTransactionRequest);
         claimTransactionsModel.ClaimTransactionItem.Id = Guid.NewGuid();
 
         var savedItem = await _claimTransactionRepository.Create(claimTransactionsModel.ClaimTransactionItem);
         claimTransactionsModel.ClaimTransactionItem = savedItem;
 
-        claimTransactionsModel.ClaimTransactionResponse = ToResponse(savedItem);
+        claimTransactionsModel.ClaimTransactionResponse = _mapper.ToResponse(savedItem);
         claimTransactionsModel.IsNotValid = false;
         claimTransactionsModel.Message = "ClaimTransaction created successfully.";
 
@@ -38,7 +43,7 @@ public class ClaimTransactionBL : IClaimTransactionBL
         }
 
         claimTransactionsModel.ClaimTransactionItem = item;
-        claimTransactionsModel.ClaimTransactionResponse = ToResponse(item);
+        claimTransactionsModel.ClaimTransactionResponse = _mapper.ToResponse(item);
         claimTransactionsModel.IsNotValid = false;
         claimTransactionsModel.Message = "ClaimTransaction retrieved successfully.";
         return claimTransactionsModel;
@@ -74,12 +79,12 @@ public class ClaimTransactionBL : IClaimTransactionBL
             return claimTransactionsModel;
         }
 
-        var updatedItem = ToItem(claimTransactionsModel.ClaimTransactionRequest);
+        var updatedItem = _mapper.ToItem(claimTransactionsModel.ClaimTransactionRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _claimTransactionRepository.Update(updatedItem);
         claimTransactionsModel.ClaimTransactionItem = savedItem!;
-        claimTransactionsModel.ClaimTransactionResponse = ToResponse(savedItem!);
+        claimTransactionsModel.ClaimTransactionResponse = _mapper.ToResponse(savedItem!);
         claimTransactionsModel.IsNotValid = false;
         claimTransactionsModel.Message = "ClaimTransaction updated successfully.";
         return claimTransactionsModel;
@@ -100,76 +105,60 @@ public class ClaimTransactionBL : IClaimTransactionBL
         return claimTransactionsModel;
     }
 
-    private static ClaimTransactionItem ToItem(ClaimTransactionRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        ClaimId = request.ClaimId,
-        ChargeId = request.ChargeId,
-        PatientId = request.PatientId,
-        Type = request.Type,
-        Amount = request.Amount,
-        Method = request.Method,
-        FromDate = request.FromDate,
-        ToDate = request.ToDate,
-        PlaceOfServiceId = request.PlaceOfServiceId,
-        ProcedureCode = request.ProcedureCode,
-        Modifier1 = request.Modifier1,
-        Modifier2 = request.Modifier2,
-        DiagnosisRef1 = request.DiagnosisRef1,
-        DiagnosisRef2 = request.DiagnosisRef2,
-        DiagnosisRef3 = request.DiagnosisRef3,
-        DiagnosisRef4 = request.DiagnosisRef4,
-        Units = request.Units,
-        DepartmentId = request.DepartmentId,
-        Notes = request.Notes,
-        UnitAmount = request.UnitAmount,
-        TransferOutId = request.TransferOutId,
-        TransferType = request.TransferType,
-        Payments = request.Payments,
-        Adjustments = request.Adjustments,
-        Transfers = request.Transfers,
-        Outstanding = request.Outstanding,
-        AppointmentId = request.AppointmentId,
-        LineNote = request.LineNote,
-        PatientInsuranceId = request.PatientInsuranceId,
-        FeeScheduleId = request.FeeScheduleId,
-        ProviderId = request.ProviderId,
-        SupervisingProviderId = request.SupervisingProviderId
-    };
+        var result = new ImportResult();
+        var batch = new List<ClaimTransactionItem>();
 
-    private static ClaimTransactionResponse ToResponse(ClaimTransactionItem item) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_mapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<ClaimTransactionItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        ClaimId = item.ClaimId,
-        ChargeId = item.ChargeId,
-        PatientId = item.PatientId,
-        Type = item.Type,
-        Amount = item.Amount,
-        Method = item.Method,
-        FromDate = item.FromDate,
-        ToDate = item.ToDate,
-        PlaceOfServiceId = item.PlaceOfServiceId,
-        ProcedureCode = item.ProcedureCode,
-        Modifier1 = item.Modifier1,
-        Modifier2 = item.Modifier2,
-        DiagnosisRef1 = item.DiagnosisRef1,
-        DiagnosisRef2 = item.DiagnosisRef2,
-        DiagnosisRef3 = item.DiagnosisRef3,
-        DiagnosisRef4 = item.DiagnosisRef4,
-        Units = item.Units,
-        DepartmentId = item.DepartmentId,
-        Notes = item.Notes,
-        UnitAmount = item.UnitAmount,
-        TransferOutId = item.TransferOutId,
-        TransferType = item.TransferType,
-        Payments = item.Payments,
-        Adjustments = item.Adjustments,
-        Transfers = item.Transfers,
-        Outstanding = item.Outstanding,
-        AppointmentId = item.AppointmentId,
-        LineNote = item.LineNote,
-        PatientInsuranceId = item.PatientInsuranceId,
-        FeeScheduleId = item.FeeScheduleId,
-        ProviderId = item.ProviderId,
-        SupervisingProviderId = item.SupervisingProviderId
-    };
+        try
+        {
+            await _claimTransactionRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
 }

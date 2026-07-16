@@ -41,6 +41,14 @@ public class ClaimTransactionRepository : IClaimTransactionRepository
         return _mapper.ToModel(entity);
     }
 
+    public async Task CreateBatch(List<ClaimTransactionItem> claimTransactionItems)
+    {
+        var entities = claimTransactionItems.Select(_mapper.ToEntity);
+        _context.ClaimTransactions.AddRange(entities);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+    }
+
     public async Task<ClaimTransactionItem?> Update(ClaimTransactionItem claimTransactionItem)
     {
         var entity = await _context.ClaimTransactions.FirstOrDefaultAsync(c => c.Id == claimTransactionItem.Id);

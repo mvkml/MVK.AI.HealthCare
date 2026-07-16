@@ -1,25 +1,30 @@
 using AI.HealthCare.Patient.Models.Observation;
+using AI.HealthCare.Patient.Models.Shared;
 using AI.HealthCare.Patient.Repositories;
 
 namespace AI.HealthCare.Patient.BL;
 
 public class ObservationBL : IObservationBL
 {
-    private readonly IObservationRepository _observationRepository;
+    private const int ImportBatchSize = 500;
 
-    public ObservationBL(IObservationRepository observationRepository)
+    private readonly IObservationRepository _observationRepository;
+    private readonly IObservationBLMapper _mapper;
+
+    public ObservationBL(IObservationRepository observationRepository, IObservationBLMapper mapper)
     {
         _observationRepository = observationRepository;
+        _mapper = mapper;
     }
 
     public async Task<ObservationsModel> Create(ObservationsModel observationsModel)
     {
-        observationsModel.ObservationItem = ToItem(observationsModel.ObservationRequest);
+        observationsModel.ObservationItem = _mapper.ToItem(observationsModel.ObservationRequest);
 
         var savedItem = await _observationRepository.Create(observationsModel.ObservationItem);
         observationsModel.ObservationItem = savedItem;
 
-        observationsModel.ObservationResponse = ToResponse(savedItem);
+        observationsModel.ObservationResponse = _mapper.ToResponse(savedItem);
         observationsModel.IsNotValid = false;
         observationsModel.Message = "Observation created successfully.";
 
@@ -37,7 +42,7 @@ public class ObservationBL : IObservationBL
         }
 
         observationsModel.ObservationItem = item;
-        observationsModel.ObservationResponse = ToResponse(item);
+        observationsModel.ObservationResponse = _mapper.ToResponse(item);
         observationsModel.IsNotValid = false;
         observationsModel.Message = "Observation retrieved successfully.";
         return observationsModel;
@@ -73,12 +78,12 @@ public class ObservationBL : IObservationBL
             return observationsModel;
         }
 
-        var updatedItem = ToItem(observationsModel.ObservationRequest);
+        var updatedItem = _mapper.ToItem(observationsModel.ObservationRequest);
         updatedItem.Id = existing.Id;
 
         var savedItem = await _observationRepository.Update(updatedItem);
         observationsModel.ObservationItem = savedItem!;
-        observationsModel.ObservationResponse = ToResponse(savedItem!);
+        observationsModel.ObservationResponse = _mapper.ToResponse(savedItem!);
         observationsModel.IsNotValid = false;
         observationsModel.Message = "Observation updated successfully.";
         return observationsModel;
@@ -99,30 +104,60 @@ public class ObservationBL : IObservationBL
         return observationsModel;
     }
 
-    private static ObservationItem ToItem(ObservationRequest request) => new()
+    public async Task<ImportResult> Import(Stream csvStream)
     {
-        Date = request.Date,
-        PatientId = request.PatientId,
-        EncounterId = request.EncounterId,
-        Category = request.Category,
-        Code = request.Code,
-        Description = request.Description,
-        Value = request.Value,
-        Units = request.Units,
-        Type = request.Type
-    };
+        var result = new ImportResult();
+        var batch = new List<ObservationItem>();
 
-    private static ObservationResponse ToResponse(ObservationItem item) => new()
+        using var reader = new StreamReader(csvStream);
+        await reader.ReadLineAsync(); // skip header row
+
+        var rowNumber = 1;
+        while (!reader.EndOfStream)
+        {
+            rowNumber++;
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            result.TotalRows++;
+
+            try
+            {
+                batch.Add(_mapper.ToModel(line.Split(',')));
+            }
+            catch (Exception ex)
+            {
+                result.FailedCount++;
+                result.Errors.Add(new ImportRowError { RowNumber = rowNumber, ErrorMessage = ex.Message });
+                continue;
+            }
+
+            if (batch.Count >= ImportBatchSize)
+                await FlushBatch(batch, result);
+        }
+
+        if (batch.Count > 0)
+            await FlushBatch(batch, result);
+
+        return result;
+    }
+
+    private async Task FlushBatch(List<ObservationItem> batch, ImportResult result)
     {
-        Id = item.Id,
-        Date = item.Date,
-        PatientId = item.PatientId,
-        EncounterId = item.EncounterId,
-        Category = item.Category,
-        Code = item.Code,
-        Description = item.Description,
-        Value = item.Value,
-        Units = item.Units,
-        Type = item.Type
-    };
+        try
+        {
+            await _observationRepository.CreateBatch(batch);
+            result.InsertedCount += batch.Count;
+        }
+        catch (Exception ex)
+        {
+            result.FailedCount += batch.Count;
+            result.Errors.Add(new ImportRowError { RowNumber = -1, ErrorMessage = $"Batch insert failed: {ex.Message}" });
+        }
+        finally
+        {
+            batch.Clear();
+        }
+    }
 }

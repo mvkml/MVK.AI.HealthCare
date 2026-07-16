@@ -25,7 +25,9 @@
     "demo:supply-upsert": "tsx demo/supply-api/upsert-demo.ts",
     "demo:imaging-study-upsert": "tsx demo/imaging-study-api/upsert-demo.ts",
     "demo:medication-upsert": "tsx demo/medication-api/upsert-demo.ts",
-    "demo:claim-upsert": "tsx demo/claim-api/upsert-demo.ts"
+    "demo:claim-upsert": "tsx demo/claim-api/upsert-demo.ts",
+    "demo:observation-import": "tsx demo/observation-api/import-demo.ts",
+    "demo:claim-transaction-import": "tsx demo/claim-transaction-api/import-demo.ts"
   },
   "keywords": [],
   "author": "",

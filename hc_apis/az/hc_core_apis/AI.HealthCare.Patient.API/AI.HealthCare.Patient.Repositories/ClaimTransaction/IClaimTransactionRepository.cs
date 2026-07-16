@@ -8,6 +8,7 @@ public interface IClaimTransactionRepository
     Task<List<ClaimTransactionItem>> GetAll();
     Task<List<ClaimTransactionItem>> GetByClaimId(Guid claimId);
     Task<ClaimTransactionItem> Create(ClaimTransactionItem claimTransactionItem);
+    Task CreateBatch(List<ClaimTransactionItem> claimTransactionItems);
     Task<ClaimTransactionItem?> Update(ClaimTransactionItem claimTransactionItem);
     Task<bool> Delete(Guid id);
 }

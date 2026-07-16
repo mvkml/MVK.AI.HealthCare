@@ -301,7 +301,7 @@ public class PatientDbContext : DbContext
             e.Property(x => x.Category).HasMaxLength(30);
             e.Property(x => x.Code).HasMaxLength(50);
             e.Property(x => x.Description).HasMaxLength(300);
-            e.Property(x => x.Value).HasMaxLength(50);
+            e.Property(x => x.Value).HasMaxLength(250);
             e.Property(x => x.Units).HasMaxLength(20);
             e.Property(x => x.Type).HasMaxLength(20);
 
@@ -440,7 +440,7 @@ public class PatientDbContext : DbContext
             e.Property(x => x.ProcedureCode).HasMaxLength(20);
             e.Property(x => x.Modifier1).HasMaxLength(10);
             e.Property(x => x.Modifier2).HasMaxLength(10);
-            e.Property(x => x.Notes).HasMaxLength(250);
+            e.Property(x => x.Notes).HasMaxLength(400);
             e.Property(x => x.UnitAmount).HasColumnType("decimal(12,2)");
             e.Property(x => x.TransferOutId).HasMaxLength(50);
             e.Property(x => x.TransferType).HasMaxLength(50);

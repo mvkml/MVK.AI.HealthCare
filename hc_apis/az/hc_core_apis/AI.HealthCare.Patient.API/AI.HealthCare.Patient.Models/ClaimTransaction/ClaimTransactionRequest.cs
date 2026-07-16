@@ -6,7 +6,7 @@ public class ClaimTransactionRequest
     public int ChargeId { get; set; }
     public Guid PatientId { get; set; }
     public string Type { get; set; } = string.Empty;
-    public decimal Amount { get; set; }
+    public decimal? Amount { get; set; }
     public string? Method { get; set; }
     public DateTime FromDate { get; set; }
     public DateTime ToDate { get; set; }
@@ -30,8 +30,8 @@ public class ClaimTransactionRequest
     public decimal? Outstanding { get; set; }
     public Guid? AppointmentId { get; set; }
     public string? LineNote { get; set; }
-    public int? PatientInsuranceId { get; set; }
-    public Guid? FeeScheduleId { get; set; }
+    public Guid? PatientInsuranceId { get; set; }
+    public int? FeeScheduleId { get; set; }
     public Guid ProviderId { get; set; }
     public Guid SupervisingProviderId { get; set; }
 }

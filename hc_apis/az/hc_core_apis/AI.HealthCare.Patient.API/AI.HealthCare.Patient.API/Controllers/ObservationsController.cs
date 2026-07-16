@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.Observation;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class ObservationsController : ControllerBase
 {
     private readonly IObservationBL _observationBL;
     private readonly IObservationValidationService _observationValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public ObservationsController(IObservationBL observationBL, IObservationValidationService observationValidationService)
+    public ObservationsController(IObservationBL observationBL, IObservationValidationService observationValidationService, ICsvFileValidator csvFileValidator)
     {
         _observationBL = observationBL;
         _observationValidationService = observationValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new observation.</summary>
@@ -90,6 +94,19 @@ public class ObservationsController : ControllerBase
             return NotFound(observationsModel.Message);
 
         return Ok(observationsModel.ObservationResponse);
+    }
+
+    /// <summary>Bulk imports observations from a CSV file (Synthea observations.csv format). Matching Patient and Encounter records must already exist. Insert-only: observations are an append-only historical log with no natural unique key, so every row is inserted as-is (no upsert matching).</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _observationBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes an observation by Id.</summary>

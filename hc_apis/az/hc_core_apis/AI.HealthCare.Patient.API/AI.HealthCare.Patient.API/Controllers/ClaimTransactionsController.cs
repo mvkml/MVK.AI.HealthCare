@@ -1,5 +1,7 @@
+using AI.HealthCare.Patient.API.Shared;
 using AI.HealthCare.Patient.BL;
 using AI.HealthCare.Patient.Models.ClaimTransaction;
+using AI.HealthCare.Patient.Models.Shared;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.HealthCare.Patient.API.Controllers;
@@ -10,11 +12,13 @@ public class ClaimTransactionsController : ControllerBase
 {
     private readonly IClaimTransactionBL _claimTransactionBL;
     private readonly IClaimTransactionValidationService _claimTransactionValidationService;
+    private readonly ICsvFileValidator _csvFileValidator;
 
-    public ClaimTransactionsController(IClaimTransactionBL claimTransactionBL, IClaimTransactionValidationService claimTransactionValidationService)
+    public ClaimTransactionsController(IClaimTransactionBL claimTransactionBL, IClaimTransactionValidationService claimTransactionValidationService, ICsvFileValidator csvFileValidator)
     {
         _claimTransactionBL = claimTransactionBL;
         _claimTransactionValidationService = claimTransactionValidationService;
+        _csvFileValidator = csvFileValidator;
     }
 
     /// <summary>Creates a new claim transaction.</summary>
@@ -90,6 +94,19 @@ public class ClaimTransactionsController : ControllerBase
             return NotFound(claimTransactionsModel.Message);
 
         return Ok(claimTransactionsModel.ClaimTransactionResponse);
+    }
+
+    /// <summary>Bulk imports claim transactions from a CSV file (Synthea claims_transactions.csv format). Matching Patient, Claim, and Provider records must already exist. Insert-only: the CSV's ID column is a genuine unique key, so every row is inserted as-is (no upsert matching).</summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(104_857_600)]
+    public async Task<ActionResult<ImportResult>> Import(IFormFile file)
+    {
+        var (isValid, errorMessage) = _csvFileValidator.Validate(file);
+        if (!isValid)
+            return BadRequest(errorMessage);
+
+        var result = await _claimTransactionBL.Import(file.OpenReadStream());
+        return Ok(result);
     }
 
     /// <summary>Deletes a claim transaction by Id.</summary>
