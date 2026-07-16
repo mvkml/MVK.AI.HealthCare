@@ -23,7 +23,9 @@
     "demo:procedure-upsert": "tsx demo/procedure-api/upsert-demo.ts",
     "demo:device-upsert": "tsx demo/device-api/upsert-demo.ts",
     "demo:supply-upsert": "tsx demo/supply-api/upsert-demo.ts",
-    "demo:imaging-study-upsert": "tsx demo/imaging-study-api/upsert-demo.ts"
+    "demo:imaging-study-upsert": "tsx demo/imaging-study-api/upsert-demo.ts",
+    "demo:medication-upsert": "tsx demo/medication-api/upsert-demo.ts",
+    "demo:claim-upsert": "tsx demo/claim-api/upsert-demo.ts"
   },
   "keywords": [],
   "author": "",
