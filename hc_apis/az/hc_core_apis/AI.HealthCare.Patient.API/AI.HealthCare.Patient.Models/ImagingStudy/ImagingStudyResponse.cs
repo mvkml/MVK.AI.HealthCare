@@ -2,7 +2,8 @@ namespace AI.HealthCare.Patient.Models.ImagingStudy;
 
 public class ImagingStudyResponse : BaseModel
 {
-    public Guid Id { get; set; }
+    public long Id { get; set; }
+    public Guid StudyId { get; set; }
     public DateTime Date { get; set; }
     public Guid PatientId { get; set; }
     public Guid EncounterId { get; set; }

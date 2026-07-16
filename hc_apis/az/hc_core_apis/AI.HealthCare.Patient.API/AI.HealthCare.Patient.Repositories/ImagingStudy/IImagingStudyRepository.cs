@@ -4,12 +4,12 @@ namespace AI.HealthCare.Patient.Repositories;
 
 public interface IImagingStudyRepository
 {
-    Task<ImagingStudyItem?> GetById(Guid id);
+    Task<ImagingStudyItem?> GetById(long id);
     Task<List<ImagingStudyItem>> GetAll();
     Task<List<ImagingStudyItem>> GetByPatientId(Guid patientId);
     Task<ImagingStudyItem> Create(ImagingStudyItem imagingStudyItem);
     Task CreateBatch(List<ImagingStudyItem> imagingStudyItems);
     Task UpsertBatch(List<ImagingStudyItem> imagingStudyItems);
     Task<ImagingStudyItem?> Update(ImagingStudyItem imagingStudyItem);
-    Task<bool> Delete(Guid id);
+    Task<bool> Delete(long id);
 }

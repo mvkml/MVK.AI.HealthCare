@@ -2,6 +2,8 @@ namespace AI.HealthCare.Patient.Models.ImagingStudy;
 
 public class ImagingStudyRequest
 {
+    /// <summary>Optional grouping Id for the study; a new one is generated if omitted.</summary>
+    public Guid? StudyId { get; set; }
     public DateTime Date { get; set; }
     public Guid PatientId { get; set; }
     public Guid EncounterId { get; set; }

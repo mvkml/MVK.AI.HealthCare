@@ -2,7 +2,9 @@ namespace AI.HealthCare.Patient.EF.Entities;
 
 public class ImagingStudy
 {
-    public Guid Id { get; set; }
+    public long Id { get; set; }
+    /// <summary>Synthea's study Id. Not unique per row — one study can span many series/instance rows.</summary>
+    public Guid StudyId { get; set; }
     public DateTime Date { get; set; }
     public Guid PatientId { get; set; }
     public Entities.Patient? Patient { get; set; }

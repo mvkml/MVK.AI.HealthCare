@@ -20,7 +20,8 @@ public class ImagingStudyBL : IImagingStudyBL
     public async Task<ImagingStudiesModel> Create(ImagingStudiesModel imagingStudiesModel)
     {
         imagingStudiesModel.ImagingStudyItem = _mapper.ToItem(imagingStudiesModel.ImagingStudyRequest);
-        imagingStudiesModel.ImagingStudyItem.Id = Guid.NewGuid();
+        if (imagingStudiesModel.ImagingStudyItem.StudyId == Guid.Empty)
+            imagingStudiesModel.ImagingStudyItem.StudyId = Guid.NewGuid();
 
         var savedItem = await _imagingStudyRepository.Create(imagingStudiesModel.ImagingStudyItem);
         imagingStudiesModel.ImagingStudyItem = savedItem;
@@ -81,6 +82,8 @@ public class ImagingStudyBL : IImagingStudyBL
 
         var updatedItem = _mapper.ToItem(imagingStudiesModel.ImagingStudyRequest);
         updatedItem.Id = existing.Id;
+        if (updatedItem.StudyId == Guid.Empty)
+            updatedItem.StudyId = existing.StudyId;
 
         var savedItem = await _imagingStudyRepository.Update(updatedItem);
         imagingStudiesModel.ImagingStudyItem = savedItem!;

@@ -8,6 +8,7 @@ public class ImagingStudyMapper : IImagingStudyMapper
     public ImagingStudyItem ToModel(EfImagingStudy entity) => new()
     {
         Id = entity.Id,
+        StudyId = entity.StudyId,
         Date = entity.Date,
         PatientId = entity.PatientId,
         EncounterId = entity.EncounterId,
@@ -25,6 +26,7 @@ public class ImagingStudyMapper : IImagingStudyMapper
     public EfImagingStudy ToEntity(ImagingStudyItem item) => new()
     {
         Id = item.Id,
+        StudyId = item.StudyId,
         Date = item.Date,
         PatientId = item.PatientId,
         EncounterId = item.EncounterId,

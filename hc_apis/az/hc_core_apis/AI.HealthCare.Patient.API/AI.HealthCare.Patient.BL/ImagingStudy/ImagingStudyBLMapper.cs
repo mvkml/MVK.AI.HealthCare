@@ -5,6 +5,9 @@ namespace AI.HealthCare.Patient.BL;
 
 // Maps a row from Synthea's imaging_studies.csv:
 // Id,DATE,PATIENT,ENCOUNTER,SERIES_UID,BODYSITE_CODE,BODYSITE_DESCRIPTION,MODALITY_CODE,MODALITY_DESCRIPTION,INSTANCE_UID,SOP_CODE,SOP_DESCRIPTION,PROCEDURE_CODE
+// The Id column is Synthea's study Id, not a unique row Id -- one study spans many series/instance rows,
+// so it maps to StudyId. The row's own primary key (Id, long) is server-generated; rows are matched for
+// upsert purposes by InstanceUid, which is unique per row.
 public class ImagingStudyBLMapper : IImagingStudyBLMapper
 {
     private const int ExpectedColumnCount = 13;
@@ -16,7 +19,7 @@ public class ImagingStudyBLMapper : IImagingStudyBLMapper
 
         return new ImagingStudyItem
         {
-            Id = Guid.Parse(row[0]),
+            StudyId = Guid.Parse(row[0]),
             Date = DateTime.Parse(row[1], CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal),
             PatientId = Guid.Parse(row[2]),
             EncounterId = Guid.Parse(row[3]),
@@ -34,6 +37,7 @@ public class ImagingStudyBLMapper : IImagingStudyBLMapper
 
     public ImagingStudyItem ToItem(ImagingStudyRequest request) => new()
     {
+        StudyId = request.StudyId ?? Guid.Empty,
         Date = request.Date,
         PatientId = request.PatientId,
         EncounterId = request.EncounterId,
@@ -51,6 +55,7 @@ public class ImagingStudyBLMapper : IImagingStudyBLMapper
     public ImagingStudyResponse ToResponse(ImagingStudyItem item) => new()
     {
         Id = item.Id,
+        StudyId = item.StudyId,
         Date = item.Date,
         PatientId = item.PatientId,
         EncounterId = item.EncounterId,

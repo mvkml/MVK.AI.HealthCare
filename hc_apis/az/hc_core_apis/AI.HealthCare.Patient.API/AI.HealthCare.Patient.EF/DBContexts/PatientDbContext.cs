@@ -354,7 +354,6 @@ public class PatientDbContext : DbContext
         modelBuilder.Entity<ImagingStudy>(e =>
         {
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).ValueGeneratedNever();
             e.Property(x => x.SeriesUid).HasMaxLength(150);
             e.Property(x => x.BodysiteCode).HasMaxLength(50);
             e.Property(x => x.BodysiteDescription).HasMaxLength(300);

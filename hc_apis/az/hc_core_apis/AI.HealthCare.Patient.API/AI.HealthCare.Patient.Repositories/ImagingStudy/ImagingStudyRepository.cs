@@ -15,7 +15,7 @@ public class ImagingStudyRepository : IImagingStudyRepository
         _mapper = mapper;
     }
 
-    public async Task<ImagingStudyItem?> GetById(Guid id)
+    public async Task<ImagingStudyItem?> GetById(long id)
     {
         var entity = await _context.ImagingStudies.FirstOrDefaultAsync(i => i.Id == id);
         return entity is null ? null : _mapper.ToModel(entity);
@@ -51,20 +51,35 @@ public class ImagingStudyRepository : IImagingStudyRepository
 
     public async Task UpsertBatch(List<ImagingStudyItem> imagingStudyItems)
     {
-        var ids = imagingStudyItems.Select(i => i.Id).ToHashSet();
-        var existingIds = (await _context.ImagingStudies
-            .Where(i => ids.Contains(i.Id))
-            .Select(i => i.Id)
-            .ToListAsync())
-            .ToHashSet();
+        var instanceUids = imagingStudyItems.Select(i => i.InstanceUid).ToHashSet();
+
+        var existingEntities = await _context.ImagingStudies
+            .Where(i => instanceUids.Contains(i.InstanceUid))
+            .ToListAsync();
+        var existingByKey = existingEntities.ToLookup(e => e.InstanceUid);
 
         foreach (var item in imagingStudyItems)
         {
-            var entity = _mapper.ToEntity(item);
-            if (existingIds.Contains(item.Id))
-                _context.ImagingStudies.Update(entity);
+            var match = existingByKey[item.InstanceUid].FirstOrDefault();
+            if (match is not null)
+            {
+                match.StudyId = item.StudyId;
+                match.Date = item.Date;
+                match.PatientId = item.PatientId;
+                match.EncounterId = item.EncounterId;
+                match.SeriesUid = item.SeriesUid;
+                match.BodysiteCode = item.BodysiteCode;
+                match.BodysiteDescription = item.BodysiteDescription;
+                match.ModalityCode = item.ModalityCode;
+                match.ModalityDescription = item.ModalityDescription;
+                match.SopCode = item.SopCode;
+                match.SopDescription = item.SopDescription;
+                match.ProcedureCode = item.ProcedureCode;
+            }
             else
-                _context.ImagingStudies.Add(entity);
+            {
+                _context.ImagingStudies.Add(_mapper.ToEntity(item));
+            }
         }
 
         await _context.SaveChangesAsync();
@@ -76,6 +91,7 @@ public class ImagingStudyRepository : IImagingStudyRepository
         var entity = await _context.ImagingStudies.FirstOrDefaultAsync(i => i.Id == imagingStudyItem.Id);
         if (entity is null) return null;
 
+        entity.StudyId = imagingStudyItem.StudyId;
         entity.Date = imagingStudyItem.Date;
         entity.PatientId = imagingStudyItem.PatientId;
         entity.EncounterId = imagingStudyItem.EncounterId;
@@ -93,7 +109,7 @@ public class ImagingStudyRepository : IImagingStudyRepository
         return _mapper.ToModel(entity);
     }
 
-    public async Task<bool> Delete(Guid id)
+    public async Task<bool> Delete(long id)
     {
         var entity = await _context.ImagingStudies.FirstOrDefaultAsync(i => i.Id == id);
         if (entity is null) return false;

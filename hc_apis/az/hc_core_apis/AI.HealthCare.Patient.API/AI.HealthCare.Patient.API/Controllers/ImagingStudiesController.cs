@@ -58,8 +58,8 @@ public class ImagingStudiesController : ControllerBase
     }
 
     /// <summary>Returns a single imaging study by Id.</summary>
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<ImagingStudyResponse>> GetById(Guid id)
+    [HttpGet("{id:long}")]
+    public async Task<ActionResult<ImagingStudyResponse>> GetById(long id)
     {
         var imagingStudiesModel = new ImagingStudiesModel { ImagingStudyItem = new ImagingStudyItem { Id = id } };
         var result = await _imagingStudyBL.GetById(imagingStudiesModel);
@@ -70,8 +70,8 @@ public class ImagingStudiesController : ControllerBase
     }
 
     /// <summary>Updates an existing imaging study.</summary>
-    [HttpPut("{id:guid}")]
-    public async Task<ActionResult<ImagingStudyResponse>> Update(Guid id, [FromBody] ImagingStudyRequest imagingStudyRequest)
+    [HttpPut("{id:long}")]
+    public async Task<ActionResult<ImagingStudyResponse>> Update(long id, [FromBody] ImagingStudyRequest imagingStudyRequest)
     {
         var imagingStudiesModel = new ImagingStudiesModel
         {
@@ -109,7 +109,7 @@ public class ImagingStudiesController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>Bulk upserts imaging studies from a CSV file (Synthea imaging_studies.csv format). Rows whose Id already exists are updated in place; new Ids are inserted. Matching Patient and Encounter records must already exist.</summary>
+    /// <summary>Bulk upserts imaging studies from a CSV file (Synthea imaging_studies.csv format). Rows are matched by InstanceUid: matches are updated in place, new InstanceUids are inserted. Matching Patient and Encounter records must already exist.</summary>
     [HttpPost("import/upsert")]
     [RequestSizeLimit(104_857_600)]
     public async Task<ActionResult<ImportResult>> ImportUpsert(IFormFile file)
@@ -123,8 +123,8 @@ public class ImagingStudiesController : ControllerBase
     }
 
     /// <summary>Deletes an imaging study by Id.</summary>
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id)
+    [HttpDelete("{id:long}")]
+    public async Task<IActionResult> Delete(long id)
     {
         var imagingStudiesModel = new ImagingStudiesModel { ImagingStudyItem = new ImagingStudyItem { Id = id } };
         var result = await _imagingStudyBL.Delete(imagingStudiesModel);
