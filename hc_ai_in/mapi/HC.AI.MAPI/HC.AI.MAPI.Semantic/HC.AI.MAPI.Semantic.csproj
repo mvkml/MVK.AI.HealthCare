@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.SemanticKernel" Version="1.78.0" />
+		<PackageReference Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.78.0-alpha" />
+	</ItemGroup>
+	
+  <ItemGroup>
+    <ProjectReference Include="..\HC.AI.MAPI.Models\HC.AI.MAPI.Models.csproj" />
+    <ProjectReference Include="..\HC.AI.MAPI.Llm\HC.AI.MAPI.Llm.csproj" />
+  </ItemGroup>
+
+</Project>

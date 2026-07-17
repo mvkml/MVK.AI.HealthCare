@@ -31,3 +31,6 @@ hc_bigdata/data/employees.csv
 
 # Synthea CSV dataset copy under AI.HealthCare.Patient.API (same bulk data, not source)
 hc_apis/az/hc_core_apis/AI.HealthCare.Patient.API/documents/patient_details/synthea/
+
+# dotnet run output redirected to file during local testing, not source
+hc_ai_in/mapi/HC.AI.MAPI/run.log

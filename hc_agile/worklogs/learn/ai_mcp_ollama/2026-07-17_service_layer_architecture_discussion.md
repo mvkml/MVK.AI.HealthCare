@@ -147,6 +147,29 @@ as a child of `AL` in the mermaid diagram above. No separate Rules Layer exists 
   prompt) duplicate what `TOOL` fetches from `BL` after the LLM responds — worth resolving once
   `AL`'s internal sequencing (parallel vs. sequential Prompt→LLM) is confirmed.
 
+## Persona Controllers — created, questions parked for later (2026-07-17)
+
+8 empty `UC*Controller` classes created under `HC.AI.MAPI/Controllers/` (`UC` = "Your Co-pilot"),
+one per persona/access-pattern discussed: `UCDoctorController`, `UCPatientController`,
+`UCProviderController`, `UCHospitalController`, `UCInsuranceProviderController`,
+`UCUserController`, `UCClientController`, `UCAnonymousController`. Structural only — no action
+methods, no routing logic yet.
+
+**Confirmed**: `UCDoctorController` is the **primary client** of this system — a doctor's
+questions get a dedicated, higher-accuracy prompt/guardrail treatment specifically because wrong
+information has real clinical consequences. `UCProviderController` is a separate, more generic
+concern (general access to `Provider` entity data), not the doctor-as-chat-user experience.
+
+**Parked for a future client discussion** (not yet resolved, explicitly deferred rather than
+guessed at):
+- What should a client be told `UCClientController` actually serves — another name for the
+  Patient persona (redundant with `UCPatientController`), or a non-chat, machine-to-machine API
+  consumer (external system integration)?
+- Does the Guardrail Layer's allow-list need to differ per persona/controller (e.g. a Patient
+  persona should never be able to query another patient's `Condition` rows, but a Doctor persona
+  might need to) — this is the real design question the persona-controller list feeds into, not
+  solved by having separate controllers alone.
+
 ## References
 
 - Prior LLM-layer worklog entry (same day): [`2026-07-17_mapi_folder_scaffold_and_llm_layer.md`](2026-07-17_mapi_folder_scaffold_and_llm_layer.md)

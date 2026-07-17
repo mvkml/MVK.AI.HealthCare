@@ -3,6 +3,12 @@
   <ItemGroup>
     <ProjectReference Include="..\HC.AI.MAPI.BL\HC.AI.MAPI.BL.csproj" />
     <ProjectReference Include="..\HC.AI.MAPI.Models\HC.AI.MAPI.Models.csproj" />
+    <ProjectReference Include="..\HC.AI.MAPI.Llm\HC.AI.MAPI.Llm.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.78.0" />
+    <PackageReference Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.78.0-alpha" />
   </ItemGroup>
 
   <PropertyGroup>
