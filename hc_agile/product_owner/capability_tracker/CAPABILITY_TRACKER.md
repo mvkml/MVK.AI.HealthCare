@@ -58,7 +58,7 @@ Updated every sprint by the Product Owner.
 | 5 | 🗄️ Dev SQL Agent | Database | 👀 Observing |
 | 6 | 🧬 Dev BigData Agent | Synthea/PySpark | ✅ Active |
 | 7 | 🔧 Dev DevOps Agent | Infrastructure | 👀 Observing |
-| 8 | 🧪 Dev QA Agent | Test Automation | 👀 Observing |
+| 8 | 🧪 Dev QA Agent | Test Automation | ✅ Active |
 | 9 | 🖥️ Dev .NET Agent | APIs | 👀 Observing |
 | 10 | 🚀 Dev FastAPI Agent | (unused so far — no FastAPI service in this project) | 👀 Observing |
 
@@ -69,3 +69,4 @@ Updated every sprint by the Product Owner.
 | Date | Updated By | What Changed |
 |------|-----------|--------------|
 | 2026-07-15 | Product Owner | Initial capability tracker created, reflecting actual verified state (only hc_bigdata has real implemented work) |
+| 2026-07-17 | Product Owner | Dev QA Agent moved to Active — ran first QA pass (scaffold smoke test) on `aihcweb`/US008 |
