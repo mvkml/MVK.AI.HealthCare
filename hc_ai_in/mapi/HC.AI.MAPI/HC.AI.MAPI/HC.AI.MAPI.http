@@ -1,0 +1,6 @@
+@HC.AI.MAPI_HostAddress = http://localhost:5150
+
+GET {{HC.AI.MAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

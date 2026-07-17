@@ -19,6 +19,9 @@ Thumbs.db
 # Local Claude Code settings (per-machine, not shared project config)
 .claude/settings.json
 
+# Not checked in per user request (2026-07-17)
+hc_agile/architecture/decisions/CHECKIN_POLICY.md
+
 # Jupyter autosave checkpoints (regenerable, not source)
 .ipynb_checkpoints/
 

@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\HC.AI.MAPI.Prompt\HC.AI.MAPI.Prompt.csproj" />
+    <ProjectReference Include="..\HC.AI.MAPI.Guardrail\HC.AI.MAPI.Guardrail.csproj" />
+    <ProjectReference Include="..\HC.AI.MAPI.BL\HC.AI.MAPI.BL.csproj" />
+    <ProjectReference Include="..\HC.AI.MAPI.Models\HC.AI.MAPI.Models.csproj" />
+    <ProjectReference Include="..\HC.AI.MAPI.Llm\HC.AI.MAPI.Llm.csproj" />
+    <ProjectReference Include="..\HC.AI.MAPI.Tool\HC.AI.MAPI.Tool.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
