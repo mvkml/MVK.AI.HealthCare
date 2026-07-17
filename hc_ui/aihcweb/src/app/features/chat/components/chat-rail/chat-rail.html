@@ -1,0 +1,29 @@
+<aside class="rail">
+  <div class="rail-head">
+    <span class="brand">HC·AI</span>
+    <button class="new-chat" type="button">+ New chat</button>
+  </div>
+
+  <nav class="history">
+    @for (group of historyGroups; track group) {
+      <div class="history-group">
+        <span class="history-label">{{ group }}</span>
+        @for (item of itemsFor(group); track item.label) {
+          <button class="history-item" [class.is-active]="item.active" type="button">
+            {{ item.label }}
+          </button>
+        }
+      </div>
+    }
+  </nav>
+
+  <div class="rail-foot">
+    <div class="persona">
+      <span class="persona-dot"></span>
+      <div>
+        <div class="persona-name">{{ persona().name }}</div>
+        <div class="persona-role">{{ persona().role }}</div>
+      </div>
+    </div>
+  </div>
+</aside>

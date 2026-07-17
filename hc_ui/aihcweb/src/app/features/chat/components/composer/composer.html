@@ -1,0 +1,10 @@
+<form class="composer" (submit)="onSubmit($event)">
+  <textarea
+    #input
+    placeholder="Ask about a patient, a visit, or a trend…"
+    rows="1"
+    (input)="onInput($event)"
+    (keydown)="onKeydown($event)"
+  ></textarea>
+  <button type="submit" class="send">Send</button>
+</form>

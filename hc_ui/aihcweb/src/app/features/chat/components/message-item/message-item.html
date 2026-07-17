@@ -1,0 +1,34 @@
+<div class="msg-meta">
+  <span>{{ message().role === 'user' ? 'You' : 'Assistant' }}</span>
+  <time>{{ message().time }}</time>
+</div>
+
+@if (message().text) {
+  <p>{{ message().text }}</p>
+}
+
+@if (message().resultList?.length) {
+  <ul class="result-list">
+    @for (row of message().resultList; track row.name) {
+      <li>
+        <span class="rl-name">{{ row.name }}</span>
+        <span class="rl-detail">{{ row.detail }}</span>
+      </li>
+    }
+  </ul>
+}
+
+@if (message().detailFields?.length) {
+  <dl class="detail-grid">
+    @for (field of message().detailFields; track field.term) {
+      <div>
+        <dt>{{ field.term }}</dt>
+        <dd>{{ field.value }}</dd>
+      </div>
+    }
+  </dl>
+}
+
+@if (message().sourceTag) {
+  <div class="source-tag">{{ message().sourceTag }}</div>
+}

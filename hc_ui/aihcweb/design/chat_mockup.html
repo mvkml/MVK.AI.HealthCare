@@ -1,0 +1,427 @@
+<title>Doctor Chat — HC.AI.MAPI Design Reference</title>
+<style>
+  :root {
+    --bg: #eef3f4;
+    --surface: #ffffff;
+    --ink: #1b2430;
+    --muted: #5b6b79;
+    --accent: #0f6e6a;
+    --accent-soft: #e1eeec;
+    --accent-ink: #0a4c49;
+    --border: #d7dee2;
+    --guard: #9a6b12;
+    --guard-soft: #f6ecd9;
+    --shadow: 0 1px 2px rgba(27, 36, 48, 0.06), 0 8px 24px rgba(27, 36, 48, 0.05);
+
+    --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #10161a;
+      --surface: #171f24;
+      --ink: #e7edef;
+      --muted: #93a3ac;
+      --accent: #46c7b8;
+      --accent-soft: #17302d;
+      --accent-ink: #b6ede4;
+      --border: #263239;
+      --guard: #d9ab5c;
+      --guard-soft: #2c2513;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #10161a;
+    --surface: #171f24;
+    --ink: #e7edef;
+    --muted: #93a3ac;
+    --accent: #46c7b8;
+    --accent-soft: #17302d;
+    --accent-ink: #b6ede4;
+    --border: #263239;
+    --guard: #d9ab5c;
+    --guard-soft: #2c2513;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+  :root[data-theme="light"] {
+    --bg: #eef3f4;
+    --surface: #ffffff;
+    --ink: #1b2430;
+    --muted: #5b6b79;
+    --accent: #0f6e6a;
+    --accent-soft: #e1eeec;
+    --accent-ink: #0a4c49;
+    --border: #d7dee2;
+    --guard: #9a6b12;
+    --guard-soft: #f6ecd9;
+    --shadow: 0 1px 2px rgba(27, 36, 48, 0.06), 0 8px 24px rgba(27, 36, 48, 0.05);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: 264px 1fr;
+    height: 100vh;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+  @media (max-width: 760px) {
+    .app { grid-template-columns: 1fr; }
+    .rail { display: none; }
+  }
+
+  /* ---- Left rail: conversation history ---- */
+  .rail {
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 16px;
+    gap: 20px;
+    min-height: 0;
+  }
+  .rail-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .brand {
+    font-family: var(--font-display);
+    font-size: 19px;
+    letter-spacing: 0.01em;
+  }
+  .new-chat {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--accent-ink);
+    background: var(--accent-soft);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  .new-chat:hover { filter: brightness(0.97); }
+  .new-chat:focus-visible, .history-item:focus-visible, .send:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .history {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .history-group { display: flex; flex-direction: column; gap: 4px; }
+  .history-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 4px 8px;
+  }
+  .history-item {
+    text-align: left;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 13.5px;
+    color: var(--ink);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .history-item:hover { background: var(--accent-soft); }
+  .history-item.is-active { background: var(--accent-soft); color: var(--accent-ink); font-weight: 600; }
+
+  .rail-foot { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border); }
+  .persona { display: flex; align-items: center; gap: 10px; }
+  .persona-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  .persona-name { font-size: 13.5px; font-weight: 600; }
+  .persona-role { font-size: 12px; color: var(--muted); }
+
+  /* ---- Main chat column ---- */
+  .chat {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100vh;
+  }
+  .chat-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px 28px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .chat-head h1 {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 8px;
+    text-wrap: balance;
+  }
+  .context-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+  }
+  .badge-guard { color: var(--guard); background: var(--guard-soft); border-color: transparent; }
+  .badge-ground { color: var(--accent-ink); background: var(--accent-soft); border-color: transparent; }
+  .theme-note { font-size: 12px; color: var(--muted); white-space: nowrap; padding-top: 2px; }
+
+  .stream {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  .msg { max-width: 640px; display: flex; flex-direction: column; gap: 6px; }
+  .msg-meta {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .msg-meta time { font-variant-numeric: tabular-nums; }
+  .msg p { margin: 0; }
+
+  .msg-user {
+    align-self: flex-end;
+    align-items: flex-end;
+    text-align: right;
+  }
+  .msg-user p {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    border-radius: 14px 14px 3px 14px;
+    padding: 10px 14px;
+    text-align: left;
+  }
+
+  .msg-assistant {
+    align-self: flex-start;
+    border-left: 2px solid var(--accent);
+    padding-left: 16px;
+  }
+
+  .result-list { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .result-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .rl-name { font-weight: 600; }
+  .rl-detail { color: var(--muted); font-family: var(--font-mono); font-size: 12.5px; white-space: nowrap; }
+
+  .detail-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 10px 0 0; }
+  .detail-grid dt { color: var(--muted); font-size: 12.5px; grid-column: 1; }
+  .detail-grid dd { margin: 0; grid-column: 2; font-size: 14px; }
+
+  .source-tag {
+    margin-top: 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .composer {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    padding: 16px 28px 22px;
+    border-top: 1px solid var(--border);
+  }
+  .composer textarea {
+    flex: 1;
+    resize: none;
+    max-height: 160px;
+    font: inherit;
+    font-size: 14.5px;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: var(--shadow);
+  }
+  .composer textarea::placeholder { color: var(--muted); }
+  .send {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 14px;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    padding: 12px 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .send:hover { filter: brightness(1.06); }
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="rail-head">
+      <span class="brand">HC·AI</span>
+      <button class="new-chat" type="button">+ New chat</button>
+    </div>
+    <nav class="history">
+      <div class="history-group">
+        <span class="history-label">Today</span>
+        <button class="history-item is-active" type="button">Recent visiting patients</button>
+        <button class="history-item" type="button">Patient details — Priya Nair</button>
+      </div>
+      <div class="history-group">
+        <span class="history-label">Earlier</span>
+        <button class="history-item" type="button">How many patients — cardiology</button>
+        <button class="history-item" type="button">Allergy check — Marcus Webb</button>
+      </div>
+    </nav>
+    <div class="rail-foot">
+      <div class="persona">
+        <span class="persona-dot"></span>
+        <div>
+          <div class="persona-name">Dr. Rosalind Okafor</div>
+          <div class="persona-role">Attending — Internal Medicine</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="chat">
+    <header class="chat-head">
+      <div>
+        <h1>Recent visiting patients</h1>
+        <div class="context-bar">
+          <span class="badge badge-guard">Read-only</span>
+          <span class="badge badge-ground">Grounded in patient records</span>
+        </div>
+      </div>
+      <div class="theme-note">HC.AI.MAPI · Doctor persona · US007/US008</div>
+    </header>
+
+    <div class="stream" id="stream">
+      <article class="msg msg-user">
+        <div class="msg-meta"><span>You</span><time>09:41</time></div>
+        <p>Which patients have visited in the last 7 days?</p>
+      </article>
+
+      <article class="msg msg-assistant">
+        <div class="msg-meta"><span>Assistant</span><time>09:41</time></div>
+        <p>6 patients were seen in the last 7 days:</p>
+        <ul class="result-list">
+          <li><span class="rl-name">Marcus Webb</span><span class="rl-detail">Internal Medicine · Jul 15</span></li>
+          <li><span class="rl-name">Priya Nair</span><span class="rl-detail">Cardiology · Jul 15</span></li>
+          <li><span class="rl-name">Diego Alvarez</span><span class="rl-detail">Internal Medicine · Jul 14</span></li>
+          <li><span class="rl-name">Helen Ostrowski</span><span class="rl-detail">Endocrinology · Jul 13</span></li>
+        </ul>
+        <div class="source-tag">Source: Encounters (last 7 days) · 6 rows · Tool Layer</div>
+      </article>
+
+      <article class="msg msg-user">
+        <div class="msg-meta"><span>You</span><time>09:42</time></div>
+        <p>Show me details for Priya Nair.</p>
+      </article>
+
+      <article class="msg msg-assistant">
+        <div class="msg-meta"><span>Assistant</span><time>09:42</time></div>
+        <p><strong>Priya Nair</strong> — Female, 47</p>
+        <dl class="detail-grid">
+          <div><dt>Last visit</dt><dd>Jul 15, 2026 · Cardiology</dd></div>
+          <div><dt>Allergies</dt><dd>Penicillin</dd></div>
+          <div><dt>Active meds</dt><dd>Atorvastatin, Lisinopril</dd></div>
+        </dl>
+        <div class="source-tag">Source: Patients, Encounters, Medications · 3 rows joined</div>
+      </article>
+    </div>
+
+    <form class="composer" id="composer">
+      <textarea id="composer-input" placeholder="Ask about a patient, a visit, or a trend…" rows="1"></textarea>
+      <button type="submit" class="send">Send</button>
+    </form>
+  </main>
+</div>
+
+<script>
+  var input = document.getElementById('composer-input');
+  var form = document.getElementById('composer');
+  var stream = document.getElementById('stream');
+
+  function autoGrow() {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 160) + 'px';
+  }
+  input.addEventListener('input', autoGrow);
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var text = input.value.trim();
+    if (!text) return;
+
+    var now = new Date();
+    var time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+
+    var userMsg = document.createElement('article');
+    userMsg.className = 'msg msg-user';
+    userMsg.innerHTML = '<div class="msg-meta"><span>You</span><time>' + time + '</time></div><p></p>';
+    userMsg.querySelector('p').textContent = text;
+    stream.appendChild(userMsg);
+
+    var reply = document.createElement('article');
+    reply.className = 'msg msg-assistant';
+    reply.innerHTML = '<div class="msg-meta"><span>Assistant</span><time>' + time + '</time></div>' +
+      '<p>(Design mockup — no backend wired yet. This is where the US007 Chat REST API response renders.)</p>';
+    stream.appendChild(reply);
+
+    input.value = '';
+    autoGrow();
+    stream.scrollTop = stream.scrollHeight;
+  });
+
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      form.requestSubmit();
+    }
+  });
+</script>

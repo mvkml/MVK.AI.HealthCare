@@ -1,0 +1,71 @@
+:host {
+  display: block;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 264px 1fr;
+  height: 100vh;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+@media (max-width: 760px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+  app-chat-rail {
+    display: none;
+  }
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100vh;
+}
+.chat-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 28px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.chat-head h1 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  text-wrap: balance;
+}
+.context-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+.badge-guard {
+  color: var(--guard);
+  background: var(--guard-soft);
+  border-color: transparent;
+}
+.badge-ground {
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  border-color: transparent;
+}
+.theme-note {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  padding-top: 2px;
+}

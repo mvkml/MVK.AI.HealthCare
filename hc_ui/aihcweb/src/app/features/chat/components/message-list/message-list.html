@@ -1,0 +1,5 @@
+<div class="stream">
+  @for (message of messages(); track message.id) {
+    <app-message-item [message]="message" />
+  }
+</div>

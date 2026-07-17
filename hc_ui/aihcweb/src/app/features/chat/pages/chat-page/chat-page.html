@@ -1,0 +1,20 @@
+<div class="app">
+  <app-chat-rail />
+
+  <main class="chat">
+    <header class="chat-head">
+      <div>
+        <h1>Recent visiting patients</h1>
+        <div class="context-bar">
+          <span class="badge badge-guard">Read-only</span>
+          <span class="badge badge-ground">Grounded in patient records</span>
+        </div>
+      </div>
+      <div class="theme-note">HC.AI.MAPI · Doctor persona · US007/US008</div>
+    </header>
+
+    <app-message-list [messages]="messages()" />
+
+    <app-composer (send)="onSend($event)" />
+  </main>
+</div>
