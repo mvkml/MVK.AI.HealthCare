@@ -1,32 +1,29 @@
-using HC.AI.MAPI.Llm;
-using Microsoft.Extensions.Options;
+using HC.AI.MAPI.Models;
+using HC.AI.MAPI.Semantic.Factory;
+using HC.AI.MAPI.SemanticProcess.Mapping;
 using Microsoft.SemanticKernel;
 
 namespace HC.AI.MAPI.SemanticProcess;
 
 public class SemanticProcessService : ISemanticProcessService
 {
-    private readonly Kernel _kernel;
+    private readonly IKernalFactory _kernalFactory;
 
-    public SemanticProcessService(IOptions<OllamaOptions> ollamaOptions)
+    public SemanticProcessService(IKernalFactory kernalFactory)
     {
-        var options = ollamaOptions.Value;
-        _kernel = Kernel.CreateBuilder()
-            .AddOllamaChatCompletion(modelId: options.Model, endpoint: new Uri(options.BaseUrl))
-            .Build();
+        _kernalFactory = kernalFactory;
     }
 
-    public async Task<string> ExecutePromptAsync(string promptTemplate, IDictionary<string, object?> arguments)
+    public async Task<string> ExecutePromptAsync(LLMOptions llmOptions, string promptTemplate, PromptItem? promptItem = null)
     {
-        var function = _kernel.CreateFunctionFromPrompt(promptTemplate);
+        var kernel = _kernalFactory.CreateKernel(llmOptions);
 
-        var kernelArguments = new KernelArguments();
-        foreach (var (key, value) in arguments)
-        {
-            kernelArguments[key] = value;
-        }
+        var executionSettings = promptItem is not null
+            ? PromptItemMapper.ToExecutionSettings(promptItem)
+            : null;
 
-        var result = await _kernel.InvokeAsync(function, kernelArguments);
+        var function = kernel.CreateFunctionFromPrompt(promptTemplate, executionSettings);
+        var result = await kernel.InvokeAsync(function);
         return result.ToString();
     }
 }

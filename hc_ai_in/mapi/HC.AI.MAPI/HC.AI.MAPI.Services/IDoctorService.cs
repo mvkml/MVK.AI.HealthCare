@@ -8,5 +8,5 @@ public interface IDoctorService
 
     Task<string> BasicHandleRequestAsync(string message);
     Task<string> GetChatResponseByPrompt(string message);
-    Task<PromptResponse> ProvidePromptAsync(PromptRequest request);
+    Task<PromptResponse> ProvidePromptAsync(PromptModel model);
 }

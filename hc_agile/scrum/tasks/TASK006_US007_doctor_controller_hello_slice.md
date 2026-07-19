@@ -1,7 +1,9 @@
 # TASK006 - Doctor controller "hi" end-to-end slice
 
 **US:** US007
-**Status:** To Do
+**Status:** Done — verified live 2026-07-17/18. Superseded/extended by TASK008; see
+`hc_agile/worklogs/dev_semantic_kernel/20260718_180408_module1_doctor_prompt_locked.md` for the
+locked end-to-end module writeup.
 
 ## Description
 Wire `UCDoctorController` (currently an empty stub) through the Agent Layer down to the Business

@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\HC.AI.MAPI.Repository\HC.AI.MAPI.Repository.csproj" />
     <ProjectReference Include="..\HC.AI.MAPI.Models\HC.AI.MAPI.Models.csproj" />
+    <ProjectReference Include="..\HC.AI.MAPI.Llm\HC.AI.MAPI.Llm.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

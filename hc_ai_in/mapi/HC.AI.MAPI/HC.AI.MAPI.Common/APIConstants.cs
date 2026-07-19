@@ -8,5 +8,9 @@
         public const string AzureOpenAIProvideName = "AzureOpenAI";
         public const string HuggingFaceProvideName = "HuggingFace";
 
+        public const string DoctorPersonaName = "Doctor";
+        public const string DoctorChatPromptKey = "doctor-chat";
+        public const string DoctorServiceSourceName = "DoctorService";
+
     }
 }

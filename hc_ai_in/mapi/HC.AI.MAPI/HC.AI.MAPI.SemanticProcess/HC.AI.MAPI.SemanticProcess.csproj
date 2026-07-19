@@ -13,6 +13,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HC.AI.MAPI.Llm\HC.AI.MAPI.Llm.csproj" />
+    <ProjectReference Include="..\HC.AI.MAPI.Semantic\HC.AI.MAPI.Semantic.csproj" />
+    <ProjectReference Include="..\HC.AI.MAPI.Models\HC.AI.MAPI.Models.csproj" />
   </ItemGroup>
 
 </Project>

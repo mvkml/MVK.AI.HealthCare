@@ -29,25 +29,43 @@ public class DoctorController : ControllerBase
     /// <response code="200">The assistant responded successfully.</response>
     [HttpGet]
     [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Get([FromQuery] string message)
     {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return BadRequest("message is required.");
+        }
+
         var response = await _doctorService.HandleRequestAsync(message);
         return Ok(response);
     }
 
-    
+
     [HttpGet("base-concept")]
     [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetBaseConcept([FromQuery] string message)
     {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return BadRequest("message is required.");
+        }
+
         var response = await _doctorService.BasicHandleRequestAsync(message);
         return Ok(response);
     }
 
      [HttpGet("chat-response-by-prompt")]
     [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetChatResponseByPrompt([FromQuery] string message)
     {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return BadRequest("message is required.");
+        }
+
         var response = await _doctorService.GetChatResponseByPrompt(message);
         return Ok(response);
     }
@@ -65,12 +83,14 @@ public class DoctorController : ControllerBase
     public async Task<IActionResult> ProvidePrompt([FromBody] PromptRequest request)
     {
         var validationResult = _promptValidationUtility.Validate(request);
+
         if (!validationResult.IsValid)
         {
             return BadRequest(validationResult.Errors);
         }
 
-        var response = await _doctorService.ProvidePromptAsync(request);
+        var model = new PromptModel { PromptRequest = request };
+        var response = await _doctorService.ProvidePromptAsync(model);
         return Ok(response);
     }
 }

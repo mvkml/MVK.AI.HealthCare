@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HC.AI.MAPI.Prompt\HC.AI.MAPI.Prompt.csproj" />
+    <ProjectReference Include="..\HC.AI.MAPI.SemanticProcess\HC.AI.MAPI.SemanticProcess.csproj" />
     <ProjectReference Include="..\HC.AI.MAPI.Guardrail\HC.AI.MAPI.Guardrail.csproj" />
     <ProjectReference Include="..\HC.AI.MAPI.BL\HC.AI.MAPI.BL.csproj" />
     <ProjectReference Include="..\HC.AI.MAPI.Models\HC.AI.MAPI.Models.csproj" />

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HC.AI.MAPI.AL\HC.AI.MAPI.AL.csproj" />
+    <ProjectReference Include="..\HC.AI.MAPI.Common\HC.AI.MAPI.Common.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

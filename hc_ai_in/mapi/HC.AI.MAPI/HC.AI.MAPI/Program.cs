@@ -1,8 +1,12 @@
 using HC.AI.MAPI.AL;
 using HC.AI.MAPI.BL.HelloWorld;
+using HC.AI.MAPI.BL.LLMModel;
 using HC.AI.MAPI.Llm;
 using HC.AI.MAPI.Prompt.Doctor;
+using HC.AI.MAPI.Semantic.Factory;
+using HC.AI.MAPI.SemanticProcess;
 using HC.AI.MAPI.Services;
+using HC.AI.MAPI.Services.Mapping;
 using HC.AI.MAPI.Tool;
 using HC.AI.MAPI.Tool.Validation;
 using Microsoft.Extensions.Options;
@@ -40,6 +44,11 @@ builder.Services.AddScoped<IDoctorAgent, DoctorAgent>();
 builder.Services.AddScoped<IDoctorService, DoctorService>();
 builder.Services.AddScoped<IDoctorPromptProvider, DoctorPromptProvider>();
 builder.Services.AddScoped<IPromptValidationUtility, PromptValidationUtility>();
+builder.Services.AddScoped<IKernalFactory, KernalFactory>();
+builder.Services.AddScoped<ISemanticProcessService, SemanticProcessService>();
+builder.Services.AddScoped<IDoctorSemanticProcess, DoctorSemanticProcess>();
+builder.Services.AddScoped<IDoctorPromptMapper, DoctorPromptMapper>();
+builder.Services.AddScoped<ILLMModelBL, LLMModelBL>();
 
 var app = builder.Build();
 
