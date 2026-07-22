@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.28" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.28">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HC.AI.Admin.BL\HC.AI.Admin.BL.csproj" />
+    <ProjectReference Include="..\HC.AI.Admin.EF\HC.AI.Admin.EF.csproj" />
+    <ProjectReference Include="..\HC.AI.Admin.Models\HC.AI.Admin.Models.csproj" />
+    <ProjectReference Include="..\HC.AI.Admin.Repositories\HC.AI.Admin.Repositories.csproj" />
+  </ItemGroup>
+
+</Project>

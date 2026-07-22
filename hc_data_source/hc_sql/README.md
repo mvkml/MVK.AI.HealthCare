@@ -27,6 +27,25 @@ server-side before touching the database.
 
 Run order: `tables/` then `seed/` then `procedures/`.
 
+## Authentication tables (PB023)
+
+`tables/002_auth_tables_users_roles_ocrdocuments.sql` documents `Users`, `Roles`, and
+`OcrDocuments` — incorporated into `AI_HealthCarePatient` from the previously separate `AI_HR`
+database used by `HC.AI.Identity.Api` (`hc_apis/az/hc_core_apis/HC.AI.Identity.Api`, renamed 2026-07-19 from
+`AI.HR.Api`). The live schema is EF Core-managed (`HC.AI.Identity.EF.DBContexts.AiHrDbContext`);
+this script is a reference copy, not the DDL that was actually run (`dotnet ef database update`
+was used instead). The source `AI_HR` database was left untouched — existing rows in
+`Users`/`OcrDocuments` were copied into `AI_HealthCarePatient`
+(IDs preserved), not moved.
+
+## Admin table (PB033)
+
+`tables/003_admins_table.sql` documents `Admins` — a new, purpose-built table added to
+`AI_HealthCarePatient` for `HC.AI.Admin.API` (`hc_apis/az/hc_core_apis/HC.AI.Admin.API`).
+Deliberately separate from `Users` (not a shared table with a role flag) and carries none of the
+HR-domain leftover fields (`Company`, `RoleId`) that `Users` inherited from its `AI.HR.Api` origin.
+Schema is EF Core-managed (`HC.AI.Admin.EF.DBContexts.AdminDbContext`).
+
 **Open items** — see `PB014`–`PB016` in the product backlog: an ADR is needed to formally
 reconcile "dynamic query with joins" against the locked "no raw SQL" decision; the C# query DSL
 (`HC.AI.MAPI.Models.QueryRequest`) needs a `Join` field to carry this from the LLM Tool Layer down
