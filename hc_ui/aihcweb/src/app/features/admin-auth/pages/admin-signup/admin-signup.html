@@ -1,0 +1,82 @@
+<div class="auth-shell">
+  <div class="auth-card">
+    <div class="brand">HC·AI Admin</div>
+    <h1>Create an admin account</h1>
+    <p class="subcopy">Sign up for the Admin environment</p>
+
+    @if (errorMessage()) {
+      <div class="error-banner" role="alert">{{ errorMessage() }}</div>
+    }
+    @if (successMessage()) {
+      <div class="success-banner" role="status">{{ successMessage() }}</div>
+    }
+
+    <form (ngSubmit)="onSubmit()">
+      <label class="field">
+        <span>Full name</span>
+        <input
+          type="text"
+          name="fullName"
+          autocomplete="name"
+          placeholder="Jane Doe"
+          [ngModel]="fullName()"
+          (ngModelChange)="fullName.set($event)"
+        />
+      </label>
+
+      <label class="field">
+        <span>Email</span>
+        <input
+          type="email"
+          name="email"
+          autocomplete="email"
+          placeholder="admin@example.com"
+          [ngModel]="email()"
+          (ngModelChange)="email.set($event)"
+        />
+      </label>
+
+      <label class="field">
+        <span>Password</span>
+        <input
+          type="password"
+          name="password"
+          autocomplete="new-password"
+          placeholder="At least 8 characters"
+          [ngModel]="password()"
+          (ngModelChange)="password.set($event)"
+        />
+        @if (password()) {
+          <div class="password-strength">
+            <div
+              class="password-strength-fill"
+              [style.width]="passwordStrength().width"
+              [style.background]="passwordStrength().color"
+            ></div>
+          </div>
+          <div class="password-strength-label">{{ passwordStrength().label }}</div>
+        }
+      </label>
+
+      <label class="field">
+        <span>Confirm password</span>
+        <input
+          type="password"
+          name="confirmPassword"
+          autocomplete="new-password"
+          placeholder="Re-enter your password"
+          [ngModel]="confirmPassword()"
+          (ngModelChange)="confirmPassword.set($event)"
+        />
+      </label>
+
+      <button type="submit" class="submit" [disabled]="isLoading()">
+        {{ isLoading() ? 'Creating account…' : 'Sign up' }}
+      </button>
+    </form>
+
+    <p class="switch-link">
+      Already have an admin account? <a routerLink="/admin/login">Log in</a>
+    </p>
+  </div>
+</div>

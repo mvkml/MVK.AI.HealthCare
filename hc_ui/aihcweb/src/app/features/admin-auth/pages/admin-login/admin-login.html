@@ -1,0 +1,50 @@
+<div class="auth-shell">
+  <div class="auth-card">
+    <div class="brand">HC·AI Admin</div>
+    <h1>Admin sign in</h1>
+    <p class="subcopy">Sign in to the Admin environment</p>
+
+    @if (errorMessage()) {
+      <div class="error-banner" role="alert">{{ errorMessage() }}</div>
+    }
+
+    <form (ngSubmit)="onSubmit()">
+      <label class="field">
+        <span>Email</span>
+        <input
+          type="email"
+          name="email"
+          autocomplete="email"
+          placeholder="admin@example.com"
+          [ngModel]="email()"
+          (ngModelChange)="email.set($event)"
+        />
+      </label>
+
+      <label class="field">
+        <span>Password</span>
+        <div class="password-wrap">
+          <input
+            [type]="showPassword() ? 'text' : 'password'"
+            name="password"
+            autocomplete="current-password"
+            placeholder="••••••••"
+            [ngModel]="password()"
+            (ngModelChange)="password.set($event)"
+          />
+          <button type="button" class="toggle-password" (click)="togglePassword()">
+            {{ showPassword() ? 'Hide' : 'Show' }}
+          </button>
+        </div>
+      </label>
+
+      <button type="submit" class="submit" [disabled]="isLoading()">
+        {{ isLoading() ? 'Signing in…' : 'Sign in' }}
+      </button>
+    </form>
+
+    <p class="switch-link">
+      Need an admin account? <a routerLink="/admin/signup">Sign up</a>
+    </p>
+  </div>
+</div>

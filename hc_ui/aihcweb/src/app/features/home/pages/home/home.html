@@ -1,0 +1,31 @@
+<div class="home-shell">
+  <header class="home-header">
+    <div class="brand">HC·AI</div>
+    <button type="button" class="logout" (click)="logout()">Log out</button>
+  </header>
+
+  <main class="home-main">
+    @if (currentUser(); as user) {
+      <p class="eyebrow">Signed in as</p>
+      <h1>{{ user.fullName }}</h1>
+      <span class="persona-badge" [class.persona-doctor]="user.persona === 'doctor'" [class.persona-patient]="user.persona === 'patient'">
+        {{ user.persona === 'doctor' ? 'Doctor' : 'Patient' }}
+      </span>
+
+      @if (user.persona === 'doctor') {
+        <div class="action-card">
+          <h2>Doctor Chat</h2>
+          <p>Ask natural-language questions about patients, visits, and clinical data.</p>
+          <a routerLink="/chat" class="action-link">Open Doctor Chat →</a>
+        </div>
+      } @else {
+        <div class="action-card">
+          <h2>My Health Assistant</h2>
+          <p>Ask about your own appointments, medications, and visit history.
+             Mock demo — no Patient backend exists yet.</p>
+          <a routerLink="/patient-chat" class="action-link">Open My Health Assistant →</a>
+        </div>
+      }
+    }
+  </main>
+</div>

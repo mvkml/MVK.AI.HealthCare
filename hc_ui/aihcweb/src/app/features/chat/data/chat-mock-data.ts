@@ -1,4 +1,4 @@
-import { ChatMessage } from '../models/chat-message.model';
+import { ChatMessage } from '../../../shared/models/chat-message.model';
 
 // Mock data only — no HC.AI.MAPI call yet, pending the US007 endpoint contract.
 export const MOCK_CHAT_HISTORY: ChatMessage[] = [

@@ -5,34 +5,37 @@ import { ChatRail } from '../../../../shared/components/chat-rail/chat-rail';
 import { MessageList } from '../../../../shared/components/message-list/message-list';
 import { Composer } from '../../../../shared/components/composer/composer';
 import { ChatMessage } from '../../../../shared/models/chat-message.model';
-import { MOCK_CHAT_HISTORY, MOCK_HISTORY_ITEMS, MOCK_PERSONA } from '../../data/chat-mock-data';
-import { DoctorChatService } from '../../data/doctor-chat.service';
+import {
+  MOCK_PATIENT_CHAT_HISTORY,
+  MOCK_PATIENT_HISTORY_ITEMS,
+  MOCK_PATIENT_PERSONA
+} from '../../data/patient-chat-mock-data';
+import { PatientChatService } from '../../data/patient-chat.service';
 import { AuthService } from '../../../auth/data/auth.service';
 
 @Component({
-  selector: 'app-chat-page',
+  selector: 'app-patient-chat-page',
   imports: [ChatRail, MessageList, Composer],
-  templateUrl: './chat-page.html',
-  styleUrl: './chat-page.css',
+  templateUrl: './patient-chat-page.html',
+  styleUrl: './patient-chat-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ChatPage {
-  private readonly doctorChat = inject(DoctorChatService);
+export class PatientChatPage {
+  private readonly patientChat = inject(PatientChatService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
-  readonly messages = signal<ChatMessage[]>(MOCK_CHAT_HISTORY);
-  readonly historyItems = MOCK_HISTORY_ITEMS;
+  readonly messages = signal<ChatMessage[]>(MOCK_PATIENT_CHAT_HISTORY);
+  readonly historyItems = MOCK_PATIENT_HISTORY_ITEMS;
   readonly isSending = signal(false);
   readonly errorMessage = signal<string | null>(null);
 
-  // Reflects whoever actually mock-logged-in (US009), not a separate hardcoded persona.
   readonly railPersona = computed(() => {
     const user = this.auth.currentUser();
     if (!user) {
-      return MOCK_PERSONA;
+      return MOCK_PATIENT_PERSONA;
     }
-    return { name: user.fullName, role: user.persona === 'doctor' ? 'Doctor' : 'Patient' };
+    return { name: user.fullName, role: 'Patient' };
   });
 
   onLogout(): void {
@@ -51,7 +54,7 @@ export class ChatPage {
     this.isSending.set(true);
     this.errorMessage.set(null);
 
-    this.doctorChat.providePrompt(text).subscribe({
+    this.patientChat.providePrompt(text).subscribe({
       next: (response) => {
         this.isSending.set(false);
         const replyTime = this.formatTime(new Date());
@@ -74,13 +77,13 @@ export class ChatPage {
         this.isSending.set(false);
         if (err.status === 0) {
           this.errorMessage.set(
-            'Could not reach the Doctor chat API. Is HC.AI.MAPI running on http://localhost:5150?'
+            'Could not reach the Patient chat API. Is HC.AI.MAPI running on http://localhost:5150?'
           );
         } else if (Array.isArray(err.error)) {
           // 400 validation failure — HC.AI.MAPI returns a plain string array, not a PromptResponse.
           this.errorMessage.set(err.error.join(' '));
         } else {
-          this.errorMessage.set(`Doctor chat API error (HTTP ${err.status}).`);
+          this.errorMessage.set(`Patient chat API error (HTTP ${err.status}).`);
         }
       }
     });

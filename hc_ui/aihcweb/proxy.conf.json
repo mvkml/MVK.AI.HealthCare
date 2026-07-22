@@ -1,0 +1,12 @@
+{
+  "/api/users": {
+    "target": "http://localhost:5008",
+    "secure": false,
+    "changeOrigin": true
+  },
+  "/api": {
+    "target": "http://localhost:5150",
+    "secure": false,
+    "changeOrigin": true
+  }
+}

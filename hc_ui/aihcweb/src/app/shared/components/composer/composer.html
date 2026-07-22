@@ -3,8 +3,11 @@
     #input
     placeholder="Ask about a patient, a visit, or a trend…"
     rows="1"
+    [disabled]="disabled()"
     (input)="onInput($event)"
     (keydown)="onKeydown($event)"
   ></textarea>
-  <button type="submit" class="send">Send</button>
+  <button type="submit" class="send" [disabled]="disabled()">
+    {{ disabled() ? 'Sending…' : 'Send' }}
+  </button>
 </form>

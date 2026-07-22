@@ -1,5 +1,15 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { MOCK_HISTORY_ITEMS, MOCK_PERSONA } from '../../data/chat-mock-data';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+
+export interface ChatHistoryItem {
+  label: string;
+  group: string;
+  active: boolean;
+}
+
+export interface ChatRailPersona {
+  name: string;
+  role: string;
+}
 
 @Component({
   selector: 'app-chat-rail',
@@ -9,8 +19,9 @@ import { MOCK_HISTORY_ITEMS, MOCK_PERSONA } from '../../data/chat-mock-data';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ChatRail {
-  readonly historyItems = input(MOCK_HISTORY_ITEMS);
-  readonly persona = input(MOCK_PERSONA);
+  readonly historyItems = input.required<ChatHistoryItem[]>();
+  readonly persona = input.required<ChatRailPersona>();
+  readonly logout = output<void>();
 
   get historyGroups(): string[] {
     return [...new Set(this.historyItems().map((item) => item.group))];

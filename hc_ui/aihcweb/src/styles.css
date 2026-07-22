@@ -80,3 +80,230 @@ body {
     transition: none !important;
   }
 }
+
+/* Shared auth-page layout (Login, Signup) */
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 32px 28px;
+}
+.auth-card .brand {
+  font-family: var(--font-display);
+  font-size: 19px;
+  letter-spacing: 0.01em;
+  color: var(--accent-ink);
+  margin-bottom: 20px;
+}
+.auth-card h1 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  text-wrap: balance;
+}
+.auth-card .subcopy {
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+.auth-card .error-banner {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--guard-soft);
+  color: var(--guard);
+  font-size: 13.5px;
+}
+.auth-card .success-banner {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 13.5px;
+}
+.auth-card .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.auth-card .field input,
+.auth-card .field select {
+  font: inherit;
+  font-size: 14.5px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.auth-card .field input:focus-visible,
+.auth-card .field select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.auth-card .password-wrap {
+  position: relative;
+  display: flex;
+}
+.auth-card .password-wrap input {
+  flex: 1;
+  padding-right: 56px;
+}
+.auth-card .toggle-password {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--accent-ink);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.auth-card .submit {
+  width: 100%;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14.5px;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  padding: 12px 18px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.auth-card .submit:hover {
+  filter: brightness(1.06);
+}
+.auth-card .submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.auth-card .switch-link {
+  margin: 12px 0 0;
+  font-size: 13.5px;
+  color: var(--muted);
+  text-align: center;
+}
+.auth-card .switch-link a {
+  color: var(--accent-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+.auth-card .switch-link a:hover {
+  text-decoration: underline;
+}
+.auth-card .password-strength {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  margin-top: 6px;
+  overflow: hidden;
+}
+.auth-card .password-strength-fill {
+  height: 100%;
+  transition: width 0.2s ease;
+}
+.auth-card .password-strength-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* Shared chat-page layout (Doctor chat, Patient chat) */
+.app {
+  display: grid;
+  grid-template-columns: 264px 1fr;
+  height: 100vh;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+@media (max-width: 760px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
+  app-chat-rail {
+    display: none;
+  }
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100vh;
+}
+.chat-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 28px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.chat-head h1 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  text-wrap: balance;
+}
+.context-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+.badge-guard {
+  color: var(--guard);
+  background: var(--guard-soft);
+  border-color: transparent;
+}
+.theme-note {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  padding-top: 2px;
+}
+
+.error-banner {
+  margin: 0 28px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--guard-soft);
+  color: var(--guard);
+  font-size: 13.5px;
+}
+
+.status-line {
+  margin: 0 28px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+}

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, output, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, input, output, viewChild } from '@angular/core';
 
 @Component({
   selector: 'app-composer',
@@ -8,12 +8,16 @@ import { ChangeDetectionStrategy, Component, ElementRef, output, viewChild } fro
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Composer {
+  readonly disabled = input(false);
   readonly send = output<string>();
 
   private readonly textarea = viewChild.required<ElementRef<HTMLTextAreaElement>>('input');
 
   onSubmit(event: Event): void {
     event.preventDefault();
+    if (this.disabled()) {
+      return;
+    }
     const el = this.textarea().nativeElement;
     const text = el.value.trim();
     if (!text) {

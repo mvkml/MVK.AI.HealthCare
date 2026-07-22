@@ -1,0 +1,20 @@
+<div class="admin-home-shell">
+  <header class="admin-home-header">
+    <div class="brand">HC·AI Admin</div>
+    <button class="logout" type="button" (click)="logout()">Log out</button>
+  </header>
+
+  <main class="admin-home-main">
+    <p class="eyebrow">Admin environment</p>
+    <h1>Welcome, {{ currentAdmin()?.fullName }}</h1>
+
+    <div class="action-card">
+      <h2>Doctor &amp; Patient management</h2>
+      <p>
+        Coming soon — this is a placeholder landing page. The actual admin console for managing
+        Doctor and Patient records hasn't been scoped yet (see BACKLOG PB031). This page only
+        proves the Admin login/signup flow lands somewhere real.
+      </p>
+    </div>
+  </main>
+</div>

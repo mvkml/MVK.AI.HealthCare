@@ -34,4 +34,18 @@ describe('Composer', () => {
 
     expect(emitted).toEqual([]);
   });
+
+  it('does not emit while disabled, even with text present', () => {
+    const fixture = TestBed.createComponent(Composer);
+    fixture.componentRef.setInput('disabled', true);
+    fixture.detectChanges();
+    const emitted: string[] = [];
+    fixture.componentInstance.send.subscribe((text) => emitted.push(text));
+
+    const textarea = fixture.nativeElement.querySelector('textarea') as HTMLTextAreaElement;
+    textarea.value = 'how many patients today?';
+    fixture.nativeElement.querySelector('form').dispatchEvent(new Event('submit'));
+
+    expect(emitted).toEqual([]);
+  });
 });
