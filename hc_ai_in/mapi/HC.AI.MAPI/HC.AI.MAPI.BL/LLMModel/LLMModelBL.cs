@@ -1,18 +1,19 @@
+using HC.AI.MAPI.BL.Factory;
+using HC.AI.MAPI.Common;
 using HC.AI.MAPI.Models;
-using Microsoft.Extensions.Options;
-using OllamaOptions = HC.AI.MAPI.Llm.OllamaOptions;
 
 namespace HC.AI.MAPI.BL.LLMModel;
 
 /// <summary>
-/// Business logic for LLM/model selection. Today this always returns the single Ollama
-/// configuration bound from appsettings, regardless of <see cref="PromptItem.Persona"/>.
+/// Business logic for LLM/model selection. Resolves the appsettings.json section named by
+/// <see cref="PromptItem.ModelKey"/> (set by <c>DoctorPromptMapper</c> from
+/// <see cref="PromptItem.Persona"/> — e.g. "HCDocExecutor" for Doctor, "HCPatientExecutor" for
+/// Patient) via <see cref="ILLMOptionsFactory"/>.
 ///
-/// NOT IMPLEMENTED (see backlog PB019): persona/user-type-driven model selection (Doctor vs
-/// Insurance Provider vs Client) sourced from a database-backed configuration table, deciding
-/// provider (Ollama, OpenAI, etc.) and model per persona. This class exists now so callers
-/// already depend on "ask the BL for model details" rather than reading config directly —
-/// swapping in the database-backed lookup later is a change local to this class.
+/// Still config-based, not database-backed (see backlog PB019/PB032/EPIC001 for the DB-driven
+/// version) — this only fixes persona branching at the appsettings level. A persona whose section
+/// doesn't exist in appsettings.json falls back to <see cref="LLMOptions"/>'s own defaults
+/// (`IConfiguration.Bind` on a missing section is a no-op), not an error.
 ///
 /// Per ADR001 (Context Object pattern), takes and returns the full <see cref="PromptModel"/>.
 /// This is the ONLY class that decides the LLM provider/model — sets it on both
@@ -22,21 +23,16 @@ namespace HC.AI.MAPI.BL.LLMModel;
 /// </summary>
 public class LLMModelBL : ILLMModelBL
 {
-    private readonly OllamaOptions _ollamaOptions;
+    private readonly ILLMOptionsFactory _llmOptionsFactory;
 
-    public LLMModelBL(IOptions<OllamaOptions> ollamaOptions)
+    public LLMModelBL(ILLMOptionsFactory llmOptionsFactory)
     {
-        _ollamaOptions = ollamaOptions.Value;
+        _llmOptionsFactory = llmOptionsFactory;
     }
 
     public PromptModel GetModelDetails(PromptModel model)
     {
-        var llmOptions = new LLMOptions
-        {
-            Provider = _ollamaOptions.Provider,
-            BaseUrl = _ollamaOptions.BaseUrl,
-            Model = _ollamaOptions.Model,
-        };
+        var llmOptions = _llmOptionsFactory.GetLLMOptions(model.PromptItem.ModelKey);
 
         model.LLMOptions = llmOptions;
         model.PromptItem.LLMOptions = llmOptions;

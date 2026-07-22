@@ -12,6 +12,9 @@ public class PromptItem
 {
     public string PromptKey { get; set; } = string.Empty;
     public string Persona { get; set; } = string.Empty;
+    // The appsettings.json section name to resolve via ILLMOptionsFactory (e.g. "HCDocExecutor"),
+    // picked from Persona — not the persona label itself.
+    public string ModelKey { get; set; } = string.Empty;
     public string Source { get; set; } = string.Empty;
     public string Version { get; set; } = string.Empty;
     public string LLMProvider { get; set; } = string.Empty;

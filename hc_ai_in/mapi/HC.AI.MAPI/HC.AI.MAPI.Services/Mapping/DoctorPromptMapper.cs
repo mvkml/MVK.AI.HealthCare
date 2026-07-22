@@ -29,10 +29,15 @@ public class DoctorPromptMapper : IDoctorPromptMapper
     {
         var request = model.PromptRequest;
 
+        var modelKey = string.Equals(request.Persona, APIConstants.PatientPersonaName, StringComparison.OrdinalIgnoreCase)
+            ? APIConstants.PatientExecutorPersonaName
+            : APIConstants.DoctorExecutorPersonaName;
+
         model.PromptItem = new PromptItem
         {
             PromptKey = APIConstants.DoctorChatPromptKey,
-            Persona = APIConstants.DoctorPersonaName,
+            Persona = request.Persona,
+            ModelKey = modelKey,
             Source = APIConstants.DoctorServiceSourceName,
             CorrelationId = Guid.NewGuid().ToString(),
             CreatedAt = DateTime.UtcNow,

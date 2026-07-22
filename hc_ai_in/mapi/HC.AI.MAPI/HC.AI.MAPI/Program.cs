@@ -1,8 +1,11 @@
 using HC.AI.MAPI.AL;
+using HC.AI.MAPI.BL.Factory;
 using HC.AI.MAPI.BL.HelloWorld;
 using HC.AI.MAPI.BL.LLMModel;
+using HC.AI.MAPI.BL.Persona;
 using HC.AI.MAPI.Llm;
 using HC.AI.MAPI.Prompt.Doctor;
+using HC.AI.MAPI.Prompt.Patient;
 using HC.AI.MAPI.Semantic.Factory;
 using HC.AI.MAPI.SemanticProcess;
 using HC.AI.MAPI.Services;
@@ -49,6 +52,17 @@ builder.Services.AddScoped<ISemanticProcessService, SemanticProcessService>();
 builder.Services.AddScoped<IDoctorSemanticProcess, DoctorSemanticProcess>();
 builder.Services.AddScoped<IDoctorPromptMapper, DoctorPromptMapper>();
 builder.Services.AddScoped<ILLMModelBL, LLMModelBL>();
+builder.Services.AddScoped<ILLMOptionsFactory, LLMOptionsFactory>();
+
+builder.Services.AddScoped<IPatientService, PatientService>();
+builder.Services.AddScoped<IPatientPromptProvider, PatientPromptProvider>();
+builder.Services.AddScoped<IPatientSemanticProcess, PatientSemanticProcess>();
+builder.Services.AddScoped<IPatientPromptMapper, PatientPromptMapper>();
+
+// EPIC001 (PB032/TASK017) — mock resolution mechanism only, not wired into the live Doctor
+// provide-prompt path. See PersonaModelResolutionController and BL/Persona/*.
+builder.Services.AddSingleton<IPersonaLlmConfigProvider, PersonaLlmConfigMockProvider>();
+builder.Services.AddScoped<IPersonaModelResolutionBL, PersonaModelResolutionBL>();
 
 var app = builder.Build();
 
