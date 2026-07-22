@@ -17,7 +17,10 @@ QA Engineer — owns test strategy, bug tracking, acceptance validation, and reg
 - `hc_agile/worklogs/dev_qa/` — dated test reports and bug logs
 - Test case documents under `hc_agile/scrum/tasks/` (prefix: `QA-`)
 - Bug log: `hc_agile/qa/BUG_LOG.md`
-- `hc_qa/playwright_api/` — automated API test suite
+- `hc_qa/api/<project>/` — automated API test suites, one folder per backend API project
+  (`ai_hc_api`, `hc_ai_mapi`, `hc_fapi`, `hc_ai_identity_api`)
+- `hc_qa/web/<project>/` — automated UI test suites, one folder per web/mobile app (`aihcweb`,
+  `mvkhcapp`)
 
 ## QA Folder Structure
 

@@ -34,3 +34,7 @@ hc_apis/az/hc_core_apis/AI.HealthCare.Patient.API/documents/patient_details/synt
 
 # dotnet run output redirected to file during local testing, not source
 hc_ai_in/mapi/HC.AI.MAPI/run.log
+
+# Local LLM working files (Ollama models, classified docs) — contains doctor/patient-related
+# information, not checked in per user request (2026-07-22)
+hc_llm/

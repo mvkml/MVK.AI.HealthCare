@@ -20,6 +20,18 @@ Backend Developer — builds and maintains the ASP.NET Core REST APIs for non-AI
 - `hc_apis/az/hc_core_apis/AI.HealthCare.Patient.API/`
   - `AI.HealthCare.Patient.API` — dedicated Patient API
   - `AI.HealthCare.Patient.BL`, `AI.HealthCare.Patient.EF`, `AI.HealthCare.Patient.Repositories`
+- `hc_apis/az/hc_core_apis/HC.AI.Identity.Api/` (renamed 2026-07-19 from `AI.HR.Api`)
+  - Authentication API (signup/login/forgot-password/reset-password/roles) — `HC.AI.Identity.Api`,
+    `HC.AI.Identity.BL` (incl. `Security/` — password hashing, JWT issuing),
+    `HC.AI.Identity.DAL`, `HC.AI.Identity.EF`, `HC.AI.Identity.Models`,
+    `HC.AI.Identity.Repositories`, `HC.AI.Identity.Common`. Database merged into
+    `AI_HealthCarePatient` per PB023 (see `hc_data_source/hc_sql` for the `Users`/`Roles`/
+    `OcrDocuments` schema). Roles simplified to `Doctor`/`Patient`.
+- `hc_apis/az/hc_core_apis/HC.AI.Admin.API/` (PB033, US016/US020)
+  - Admin authentication API (signup/login) — `HC.AI.Admin.Api`, `HC.AI.Admin.BL` (incl.
+    `Security/` — password hashing, JWT issuing), `HC.AI.Admin.EF`, `HC.AI.Admin.Models`,
+    `HC.AI.Admin.Repositories`. `Admins` table added to `AI_HealthCarePatient` (same
+    one-database convention as `HC.AI.Identity.Api`) — separate table, not shared with `Users`.
 
 ## Works With
 - Architect — for API design and the AI/non-AI backend split (see ADR002)

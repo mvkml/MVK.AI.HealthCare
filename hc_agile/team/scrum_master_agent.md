@@ -13,12 +13,16 @@ Scrum Master — Facilitates agile delivery and removes blockers.
 - Ensure every dev agent logs their work using the correct naming convention
 - Review worklogs are created per session by each agent
 - Alert if any agent misses a worklog entry
+- **Own and enforce `hc_agile/REFERENCE_LINKS.md`** — the single coordinate place for every API/app
+  link (base URL, Swagger, start command, source, QA suite); each dev agent updates its own
+  section when it adds or changes a service, Scrum Master ensures nothing goes stale or missing
 
 ## Owns
 - `hc_agile/scrum/sprints/`
 - `hc_agile/scrum/tasks/`
 - `hc_agile/scrum/retrospectives/`
 - `hc_agile/worklogs/`  ← **Full ownership of all team worklogs**
+- `hc_agile/REFERENCE_LINKS.md`  ← **Full ownership of the central links doc**
 
 ## Worklog Naming Convention (enforced by Scrum Master)
 All worklog files must follow this format defined by Architect:
