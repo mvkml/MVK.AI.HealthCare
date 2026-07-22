@@ -1,5 +1,5 @@
 {
-  "name": "playwright_api",
+  "name": "ai_hc_api",
   "version": "1.0.0",
   "description": "Playwright API tests for AI.HealthCare.Patient.API",
   "main": "index.js",
